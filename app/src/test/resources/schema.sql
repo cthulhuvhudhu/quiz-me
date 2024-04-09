@@ -7,7 +7,7 @@ create table PUBLIC.USER
         constraint USER_EMAIL_UNIQUE
             unique,
     PASSWORD  CHARACTER VARYING(255) not null,
-    AUTHORITY CHARACTER VARYING(255)
+    AUTHORITY CHARACTER VARYING(255) default 'ROLE_USER'
 );
 
 
@@ -28,7 +28,7 @@ create table PUBLIC.USER_QUIZ
 (
     QUIZ_ID      BIGINT                 not null,
     USER_ID      CHARACTER VARYING(255) not null,
-    COMPLETED_AT TIMESTAMP,
+    COMPLETED_AT TIMESTAMP DEFAULT NOW(),
     primary key (QUIZ_ID, USER_ID, COMPLETED_AT),
     constraint USER_QUIZ_USER_FK
         foreign key (USER_ID) references PUBLIC.USER,

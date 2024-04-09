@@ -13,14 +13,15 @@ data class UserEntity (
     val email: String,
     @Column(nullable = false)
     internal val password: String,
-    @Transient
-    @ElementCollection(fetch = FetchType.EAGER)
-    internal val authorities: MutableCollection<SimpleGrantedAuthority>? = mutableListOf(),
-//    @OneToMany(mappedBy = "user")
-//    val completedQuizzes: List<UserQuizEntity> = emptyList()
+//    @Transient
+//    @ElementCollection(fetch = FetchType.EAGER)
+    internal val authority: String,
+    @OneToMany(mappedBy = "user")
+    val completedQuizzes: List<UserQuizEntity> = emptyList()
 ) : UserDetails {
 
-    override fun getAuthorities(): MutableCollection<SimpleGrantedAuthority>? = authorities
+    override fun getAuthorities(): MutableCollection<SimpleGrantedAuthority> =
+        mutableListOf(SimpleGrantedAuthority(authority))
 
     override fun getPassword(): String = password
 
@@ -50,12 +51,12 @@ data class UserEntity (
         var result = id?.hashCode() ?: 0
         result = 31 * result + email.hashCode()
         result = 31 * result + password.hashCode()
-        result = 31 * result + (authorities?.hashCode() ?: 0)
-//        result = 31 * result + completedQuizzes.hashCode()
+        result = 31 * result + (authority.hashCode())
+        result = 31 * result + completedQuizzes.hashCode()
         return result
     }
 
     override fun toString(): String {
-        return "UserEntity(id=$id, authorities=$authorities, completedQuizzes=)"//$completedQuizzes)"
+        return "UserEntity(id=$id, authorities=$authorities, completedQuizzes=$completedQuizzes)"
     }
 }

@@ -33,4 +33,4 @@ build
 .idea/
 
 # File DB
-*.mv.db
+*.db

@@ -64,5 +64,6 @@ tasks.withType<KotlinCompile> {
 }
 
 tasks.named<Test>("test") {
+    jvmArgs("-XX:+EnableDynamicAgentLoading", "-Djdk.instrument.traceUsage")
     useJUnitPlatform()
 }

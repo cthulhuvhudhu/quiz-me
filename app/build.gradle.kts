@@ -1,19 +1,32 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
-plugins {
-    id("org.springframework.boot") version "3.2.4"
-    id("io.spring.dependency-management") version "1.1.4"
-    kotlin("jvm") version "1.9.23"
-    kotlin("plugin.spring") version "1.9.23"
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:${Version.kotlin}")
+        classpath("org.springframework.boot:spring-boot-gradle-plugin:${Version.springBoot}")
+        classpath("io.spring.gradle:dependency-management-plugin:${Version.springDepMan}")
+        classpath("org.jetbrains.kotlin:kotlin-allopen:${Version.kotlin}")
+        classpath("org.jetbrains.kotlin:kotlin-noarg:${Version.kotlin}")
+    }
+}
 
+plugins {
+    id("org.springframework.boot") version Version.springBoot
+    id("io.spring.dependency-management") version Version.springDepMan
+    kotlin("jvm") version Version.kotlin
+    kotlin("plugin.spring") version Version.kotlin
+    kotlin("plugin.jpa") version Version.kotlin
     application
 }
 
-group = "com.cthulhuvhudhu"
-version = "0.0.1-SNAPSHOT"
+group = Config.groupId
+version = Config.versionName
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_21
+    sourceCompatibility = Config.javaVersion
 }
 
 repositories {
@@ -22,22 +35,31 @@ repositories {
 
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter")
+    implementation("org.springframework.boot:spring-boot-starter-web")
+    implementation("org.springframework.boot:spring-boot-starter-validation")
+    implementation("org.springframework.boot:spring-boot-starter-data-jpa")
+    implementation("org.springframework.boot:spring-boot-starter-security:3.2.4")
+    implementation("jakarta.validation:jakarta.validation-api:3.0.2")
+    implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
     implementation("org.jetbrains.kotlin:kotlin-reflect")
+
+    runtimeOnly("com.h2database:h2:2.2.224")
 
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5:1.7.10")
     testImplementation("org.junit.jupiter:junit-jupiter:5.9.2")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testImplementation("org.assertj:assertj-core:3.25.1")
 }
 
 application {
-    mainClass.set("quiz.me.AppKt")
+    mainClass.set("quiz.me.QuizMeKt")
 }
 
 tasks.withType<KotlinCompile> {
     kotlinOptions {
         freeCompilerArgs += "-Xjsr305=strict"
-        jvmTarget = "21"
+        jvmTarget = Config.jvmTarget
     }
 }
 

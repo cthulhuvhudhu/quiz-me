@@ -31,3 +31,6 @@ build
 
 # IDEA
 .idea/
+
+# File DB
+*.mv.db

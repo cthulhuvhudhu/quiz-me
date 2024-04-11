@@ -7,11 +7,12 @@ import org.mockito.Mockito.*
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.mock.mockito.MockBean
-import org.springframework.data.repository.findByIdOrNull
-import quiz.me.model.dao.QuizEntity
+import quiz.me.model.dto.failed
+import quiz.me.model.dto.success
 import quiz.me.repository.QuizRepository
 import quiz.me.model.quizTestModels
-import java.util.*
+import java.util.Optional
+import kotlin.test.assertNull
 
 @SpringBootTest
 class QuizServiceTest {
@@ -38,13 +39,10 @@ class QuizServiceTest {
     }
 
     @Test
-    // TODO failing
     fun `test get quiz exists`() {
         quizTestModels.forEach {
-            `when`(quizRepository.findByIdOrNull(it.id)) // TODO problem with return type!
-                .thenReturn(it.entityOut)
-            `when`(quizRepository.save(it.entityIn))
-                .thenReturn(it.entityOut)
+            `when`(quizRepository.findById(it.id))
+                .thenReturn(Optional.of(it.entityOut))
             val actual = quizService.getQuiz(it.id)
             assertThat(actual).isEqualTo(it.dto)
         }
@@ -68,7 +66,7 @@ class QuizServiceTest {
 
     @Test
     fun `test delete quiz exists`() {
-        quizTestModels.forEach { it ->
+        quizTestModels.forEach {
             quizService.deleteQuiz(it.id)
             verify(quizRepository, times(1)).deleteById(it.id)
         }
@@ -81,8 +79,26 @@ class QuizServiceTest {
     }
 
     @Test
-    fun gradeQuiz() {
-        // TODO
-        assertThat(false)
+    fun `test grade quiz`() {
+        // Empty, single, and multiple solution sets (to three quizzes)
+        val possibleAnswers = quizTestModels.map { it.entityOut.answers }
+        quizTestModels.forEach {
+            `when`(quizRepository.findById(it.id))
+                .thenReturn(Optional.of(it.entityOut))
+            possibleAnswers.forEach { guess ->
+                val actual = quizService.gradeQuiz(it.id, guess)
+                if (guess == it.entityOut.answers) {
+                    assertThat(actual == success)
+                } else {
+                    assertThat(actual == failed)
+                }
+            }
+            verify(quizRepository, times(3)).findById(it.id)
+        }
+    }
+
+    @Test
+    fun `test grade quiz does not exist`() {
+        assertNull(quizService.gradeQuiz(-1, listOf()))
     }
 }

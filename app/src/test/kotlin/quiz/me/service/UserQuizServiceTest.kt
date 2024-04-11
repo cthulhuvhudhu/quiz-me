@@ -42,9 +42,4 @@ class UserQuizServiceTest {
         val actual = userQuizService.findAllByUser(UserTestModels.dneUser, pr)
         assertThat(actual).isEmpty()
     }
-
-    @Test
-    fun `test find all completed quizzes paginated`() {
-        //TODO
-    }
 }

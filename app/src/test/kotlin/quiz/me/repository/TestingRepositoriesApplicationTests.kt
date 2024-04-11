@@ -55,12 +55,8 @@ class TestingRepositoriesApplicationTests {
                 assertThat(actual.content.map { it.quiz }.size).isEqualTo(expectedQuizzes.size)
                 assertThat(actual.content.map { it.quiz } == listOf(expectedQuizzes))
                 assertThat(actual.content.map { it.completedAt }).allSatisfy { it.isBefore(LocalDateTime.now()) }
+                assertThat(actual.totalPages).isEqualTo(1)
         }
-    }
-
-    @Test
-    fun `test find completed quizzes pagination`() {
-        // TODO
     }
 
     @Test

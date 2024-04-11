@@ -6,8 +6,8 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.data.domain.PageRequest
 import org.springframework.test.context.jdbc.Sql
-import quiz.me.model.dao.QuizEntity
-import quiz.me.model.dao.UserEntity
+import quiz.me.model.UserTestModels
+import quiz.me.model.completedQuizzes
 import java.time.LocalDateTime
 
 @SpringBootTest
@@ -23,7 +23,7 @@ class TestingRepositoriesApplicationTests {
 
     @Test
     fun `test find user by email`() {
-        val testUser = users[0]
+        val testUser = UserTestModels.users[0]
         val (id, email, password, authority) = userRepository.findUserByEmail(testUser.email)!!
         assertThat(id).isEqualTo(testUser.id)
         assertThat(email).isEqualTo(testUser.email)
@@ -32,73 +32,40 @@ class TestingRepositoriesApplicationTests {
     }
     @Test
     fun `test find missing user by email`() {
-        val user = userRepository.findUserByEmail(dneUser.email)
+        val user = userRepository.findUserByEmail(UserTestModels.dneUser.email)
         assertThat(user).isNull()
     }
 
     @Test
     fun `test find a completed quiz by user`() {
-        val testUser = users[0]
-        val testQuiz = quizzes[0]
-        val actual = userQuizRepository.findAllByUser(testUser, pr)
-        assertThat(actual.content.size).isEqualTo(1)
-        assertThat(actual.content.first().user).isEqualTo(testUser)
-        assertThat(actual.content.first().quiz.id).isEqualTo(testQuiz.id)
-        assertThat(actual.content.first().completedAt).isBefore(LocalDateTime.now())
+        val usersWithQuizzes = completedQuizzes.map { it.first }.distinct()
+        UserTestModels.users
+            .filter { usersWithQuizzes.contains(it) }
+            .forEach { testUser ->
+                val expectedQuizzes = completedQuizzes.filter { it.first == testUser }.map { it.second }
+
+                val actual = userQuizRepository.findAllByUser(testUser, pr)
+                assertThat(actual.content.size).isEqualTo(expectedQuizzes.size).isGreaterThan(0)
+                assertThat(actual.content.map { it.user }.distinct().size).isEqualTo(1)
+                assertThat(actual.content.map { it.user }.first() == testUser)
+                assertThat(actual.content.map { it.quiz }.distinct().size).isEqualTo(expectedQuizzes.size)
+                assertThat(actual.content.map { it.quiz } == listOf(expectedQuizzes))
+                assertThat(actual.content.map { it.completedAt }).allSatisfy { it.isBefore(LocalDateTime.now()) }
+        }
     }
 
     @Test
     fun `test find all completed quizzes by missing user`() {
-        val fail = userQuizRepository.findAllByUser(dneUser, pr)
-        assertThat(fail.content.size).isEqualTo(0)
+        val actual = userQuizRepository.findAllByUser(UserTestModels.dneUser, pr)
+        assertThat(actual.content.size).isEqualTo(0)
     }
 
     @Test
-    fun `test find all completed quizzes by user`() {
-        val fail = userQuizRepository.findAllByUser(users[1], pr)
-        assertThat(fail.content.size).isEqualTo(2)
-        assertThat(fail.content.map { it.quiz.id }).containsOnly(*quizzes.map { it.id }.toTypedArray())
-        assertThat(fail.content.map { it.user }).containsOnly(users[1])
+    fun `test find all completed quizzes by user with no quizzes`() {
+        val usersWithQuizzes = completedQuizzes.map { it.first }.distinct()
+        val testUser = UserTestModels.users.filterNot { usersWithQuizzes.contains(it) }.first()
+
+        val actual = userQuizRepository.findAllByUser(testUser, pr)
+        assertThat(actual.content.size).isEqualTo(0)
     }
-
-    private val dneUser = UserEntity(
-        id = "be859744-0000-4c4e-87c8-3d6bcd611111",
-        email = "DNE@a.com",
-        password = "fakePassword",
-        authority = "ROLE_ADMIN"
-    )
-
-    private val users = listOf(
-        UserEntity(
-            id = "be859744-ee6c-4c4e-87c8-3d6bcd600000",
-            email = "a@a.com",
-            password = "password",
-            authority = "ROLE_USER"
-        ),
-        UserEntity(
-            id = "be859744-ee6c-4c4e-87c8-3d6bcd600001",
-            email = "b@a.com",
-            password = "password",
-            authority = "ROLE_USER"
-        )
-    )
-
-    private val quizzes = listOf(
-        QuizEntity(
-            id = 1,
-            title = "Select option 1",
-            text = "Quiz 1",
-            options = listOf("1", "2", "3", "4"),
-            answers = listOf(0),
-            author = users[0]
-        ),
-        QuizEntity(
-            id = 2,
-            title = "Select option 2",
-            text = "Quiz 2",
-            options = listOf("1", "2", "3", "4"),
-            answers = listOf(0, 1),
-            author = users[1]
-        ),
-    )
 }

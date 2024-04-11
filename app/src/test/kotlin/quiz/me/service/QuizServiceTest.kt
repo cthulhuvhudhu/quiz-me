@@ -88,9 +88,9 @@ class QuizServiceTest {
             possibleAnswers.forEach { guess ->
                 val actual = quizService.gradeQuiz(it.id, guess)
                 if (guess == it.entityOut.answers) {
-                    assertThat(actual == success)
+                    assertThat(actual).isEqualTo(success)
                 } else {
-                    assertThat(actual == failed)
+                    assertThat(actual).isEqualTo(failed)
                 }
             }
             verify(quizRepository, times(3)).findById(it.id)

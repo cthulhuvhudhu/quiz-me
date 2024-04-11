@@ -1,6 +1,7 @@
 package quiz.me.model
 
 import quiz.me.model.dao.UserEntity
+import quiz.me.model.dto.UserDTO
 
 object UserTestModels {
     val dneUser = UserEntity(
@@ -11,23 +12,17 @@ object UserTestModels {
     )
 
     val users = listOf(
-        UserEntity(
-            id = "be859744-ee6c-4c4e-87c8-3d6bcd600000",
-            email = "a@a.com",
-            password = "password",
-            authority = "ROLE_USER"
-        ),
-        UserEntity(
-            id = "be859744-ee6c-4c4e-87c8-3d6bcd600001",
-            email = "b@a.com",
-            password = "password",
-            authority = "ROLE_USER"
-        ),
-        UserEntity(
-            id = "be859744-ee6c-4c4e-87c8-3d6bcd600002",
-            email = "noquizzes@a.com",
-            password = "password",
-            authority = "ROLE_USER"
-        )
+        UserSet("be859744-ee6c-4c4e-87c8-3d6bcd600000", "a@a.com"),
+        UserSet("be859744-ee6c-4c4e-87c8-3d6bcd600001", "b@a.com"),
+        UserSet("be859744-ee6c-4c4e-87c8-3d6bcd600002", "noquizzes@a.com"),
     )
+}
+
+class UserSet(
+    id: String,
+    val email: String
+) {
+    val entityIn: UserEntity = UserEntity(email = email, password = "encrypted${id.takeLast(4)}")
+    val entityOut: UserEntity = UserEntity(id, email, "encrypted${id.takeLast(4)}")
+    val dto: UserDTO = UserDTO(email, "password${id.takeLast(4)}")
 }

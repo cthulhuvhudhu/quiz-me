@@ -15,7 +15,7 @@ data class UserEntity (
     internal val password: String,
 //    @Transient
 //    @ElementCollection(fetch = FetchType.EAGER)
-    internal val authority: String,
+    internal val authority: String = "ROLE_USER",
     @OneToMany(mappedBy = "user")
     val completedQuizzes: List<UserQuizEntity> = emptyList()
 ) : UserDetails {

@@ -1,8 +1,8 @@
 insert into USER (ID, EMAIL, PASSWORD, AUTHORITY)
 values
-    ('be859744-ee6c-4c4e-87c8-3d6bcd600000', 'a@a.com', 'password', 'ROLE_USER'),
-    ('be859744-ee6c-4c4e-87c8-3d6bcd600001', 'b@a.com', 'password', 'ROLE_USER'),
-    ('be859744-ee6c-4c4e-87c8-3d6bcd600002', 'noquizzes@a.com', 'password', 'ROLE_USER');
+    ('be859744-ee6c-4c4e-87c8-3d6bcd600000', 'a@a.com', 'encrypted0000', 'ROLE_USER'),
+    ('be859744-ee6c-4c4e-87c8-3d6bcd600001', 'b@a.com', 'encrypted0001', 'ROLE_USER'),
+    ('be859744-ee6c-4c4e-87c8-3d6bcd600002', 'noquizzes@a.com', 'encrypted0002', 'ROLE_USER');
 
 insert into QUIZ (ID, TITLE, TEXT, AUTHOR_USER_ID)
 values

@@ -22,8 +22,8 @@ class QuizService(
     private val quizRepository: QuizRepository
 ) {
 
-    fun getQuizzes(): List<QuizDTO> = //pr: PageRequest): Page<QuizDTO> =
-        quizRepository.findAll().map { it.toDTO() }
+    fun getQuizzes(pr: PageRequest): Page<QuizDTO> =
+        quizRepository.findAll(pr).map { it.toDTO() }
 
     fun getQuiz(id: Long): QuizDTO? = quizRepository.findByIdOrNull(id)?.toDTO()
 

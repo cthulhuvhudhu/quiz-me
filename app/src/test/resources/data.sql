@@ -31,8 +31,9 @@ values
     (2, 2),
     (2, 3);
 
-insert into USER_QUIZ (QUIZ_ID, USER_ID)
+insert into USER_QUIZ (QUIZ_ID, USER_ID, COMPLETED_AT)
 values
-    (1, 'be859744-ee6c-4c4e-87c8-3d6bcd600000'),
-    (2, 'be859744-ee6c-4c4e-87c8-3d6bcd600001'),
-    (1, 'be859744-ee6c-4c4e-87c8-3d6bcd600001');
+    (1, 'be859744-ee6c-4c4e-87c8-3d6bcd600000', '2024-04-01 10:00:00.000000'),
+    (1, 'be859744-ee6c-4c4e-87c8-3d6bcd600001', '2024-04-02 10:00:00.000000'),
+    (2, 'be859744-ee6c-4c4e-87c8-3d6bcd600001', '2024-04-03 10:00:00.000000'),
+    (1, 'be859744-ee6c-4c4e-87c8-3d6bcd600000', '2024-04-04 10:00:00.000000');

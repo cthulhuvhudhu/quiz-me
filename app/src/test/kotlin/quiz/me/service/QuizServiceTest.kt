@@ -7,10 +7,10 @@ import org.mockito.Mockito.*
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.mock.mockito.MockBean
+import quiz.me.model.QuizTestModels
 import quiz.me.model.dto.failed
 import quiz.me.model.dto.success
 import quiz.me.repository.QuizRepository
-import quiz.me.model.quizTestModels
 import java.util.Optional
 import kotlin.test.assertNull
 
@@ -25,10 +25,10 @@ class QuizServiceTest {
     @Test
     fun `test get all quizzes`() {
         `when`(quizRepository.findAll())
-            .thenReturn(quizTestModels.map { it.entityOut })
+            .thenReturn(QuizTestModels.quizzes.map { it.entityOut })
         val actual = quizService.getQuizzes()
-        assertThat(actual.size).isEqualTo(quizTestModels.size)
-        assertThat(actual).containsOnly(*quizTestModels.map{ it.dto }.toTypedArray())
+        assertThat(actual.size).isEqualTo(QuizTestModels.quizzes.size)
+        assertThat(actual).containsOnly(*QuizTestModels.quizzes.map{ it.dto }.toTypedArray())
     }
 
     @Test
@@ -40,7 +40,7 @@ class QuizServiceTest {
 
     @Test
     fun `test get quiz exists`() {
-        quizTestModels.forEach {
+        QuizTestModels.quizzes.forEach {
             `when`(quizRepository.findById(it.id))
                 .thenReturn(Optional.of(it.entityOut))
             val actual = quizService.getQuiz(it.id)
@@ -56,7 +56,7 @@ class QuizServiceTest {
 
     @Test
     fun `test add quiz`() {
-        quizTestModels.forEach {
+        QuizTestModels.quizzes.forEach {
             `when`(quizRepository.save(it.entityIn))
                 .thenReturn(it.entityOut)
             val actual = quizService.addQuiz(it.createDto, it.entityOut.author)
@@ -66,7 +66,7 @@ class QuizServiceTest {
 
     @Test
     fun `test delete quiz exists`() {
-        quizTestModels.forEach {
+        QuizTestModels.quizzes.forEach {
             quizService.deleteQuiz(it.id)
             verify(quizRepository, times(1)).deleteById(it.id)
         }
@@ -81,8 +81,8 @@ class QuizServiceTest {
     @Test
     fun `test grade quiz`() {
         // Empty, single, and multiple solution sets (to three quizzes)
-        val possibleAnswers = quizTestModels.map { it.entityOut.answers }
-        quizTestModels.forEach {
+        val possibleAnswers = QuizTestModels.quizzes.map { it.entityOut.answers }
+        QuizTestModels.quizzes.forEach {
             `when`(quizRepository.findById(it.id))
                 .thenReturn(Optional.of(it.entityOut))
             possibleAnswers.forEach { guess ->

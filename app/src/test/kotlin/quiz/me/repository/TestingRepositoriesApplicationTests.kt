@@ -6,8 +6,8 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.data.domain.PageRequest
 import org.springframework.test.context.jdbc.Sql
+import quiz.me.model.QuizTestModels
 import quiz.me.model.UserTestModels
-import quiz.me.model.completedQuizzes
 import java.time.LocalDateTime
 
 @SpringBootTest
@@ -38,38 +38,49 @@ class TestingRepositoriesApplicationTests {
 
     @Test
     fun `test find a completed quiz by user`() {
-        val usersWithQuizzes = completedQuizzes.map { it.first }.distinct()
+        val usersWithQuizzes = QuizTestModels.userQuizzes.map { it.user }.distinct()
         UserTestModels.users
             .map { it.entityOut }
             .filter { usersWithQuizzes.contains(it) }
             .forEach { testUser ->
-                val expectedQuizzes = completedQuizzes.filter { it.first == testUser }.map { it.second }
+                val expectedQuizzes = QuizTestModels.userQuizzes
+                    .filter { it.user == testUser }
+                    .map { it.userQuizEntity }
 
-                val actual = userQuizRepository.findAllByUser(testUser, pr)
-                assertThat(actual.content.size).isEqualTo(expectedQuizzes.size).isGreaterThan(0)
-                assertThat(actual.content.map { it.user }.distinct().size).isEqualTo(1)
-                assertThat(actual.content.map { it.user }.first() == testUser)
-                assertThat(actual.content.map { it.quiz }.distinct().size).isEqualTo(expectedQuizzes.size)
-                assertThat(actual.content.map { it.quiz } == listOf(expectedQuizzes))
-                assertThat(actual.content.map { it.completedAt }).allSatisfy { it.isBefore(LocalDateTime.now()) }
+                val actual = userQuizRepository.findAllByUser(testUser) //, pr)
+//                assertThat(actual.content.size).isEqualTo(expectedQuizzes.size).isGreaterThan(0)
+//                assertThat(actual.content.map { it.user }.distinct().size).isEqualTo(1)
+//                assertThat(actual.content.map { it.user }.first() == testUser)
+//                assertThat(actual.content.map { it.quiz }.distinct().size).isEqualTo(expectedQuizzes.size)
+//                assertThat(actual.content.map { it.quiz } == listOf(expectedQuizzes))
+//                assertThat(actual.content.map { it.completedAt }).allSatisfy { it.isBefore(LocalDateTime.now()) }
+
+                assertThat(actual.size).isEqualTo(expectedQuizzes.size)
+                assertThat(actual.map { it.user }.distinct().size).isEqualTo(1)
+                assertThat(actual.map { it.user }.first() == testUser)
+                assertThat(actual.map { it.quiz }.size).isEqualTo(expectedQuizzes.size)
+                assertThat(actual.map { it.quiz.id }).containsOnly(*expectedQuizzes.map { it.quiz.id }.toTypedArray())
+                assertThat(actual.map { it.completedAt }).allSatisfy { it.isBefore(LocalDateTime.now()) }
         }
     }
 
     @Test
     fun `test find all completed quizzes by missing user`() {
-        val actual = userQuizRepository.findAllByUser(UserTestModels.dneUser, pr)
-        assertThat(actual.content.size).isEqualTo(0)
+        val actual = userQuizRepository.findAllByUser(UserTestModels.dneUser)//, pr)
+//        assertThat(actual.content.size).isEqualTo(0)
+        assertThat(actual.size).isEqualTo(0)
     }
 
     @Test
     fun `test find all completed quizzes by user with no quizzes`() {
-        val usersWithQuizzes = completedQuizzes.map { it.first }.distinct()
+        val usersWithQuizzes = QuizTestModels.userQuizzes.map { it.user }.distinct()
         val testUser = UserTestModels.users
             .map { it.entityOut }
             .filterNot { usersWithQuizzes.contains(it) }
             .first()
 
-        val actual = userQuizRepository.findAllByUser(testUser, pr)
-        assertThat(actual.content.size).isEqualTo(0)
+        val actual = userQuizRepository.findAllByUser(testUser) //, pr)
+//        assertThat(actual.content.size).isEqualTo(0)
+        assertThat(actual.size).isEqualTo(0)
     }
 }

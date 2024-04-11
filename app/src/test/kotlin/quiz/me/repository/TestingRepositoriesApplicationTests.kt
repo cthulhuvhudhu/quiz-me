@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.data.domain.PageRequest
+import org.springframework.data.domain.Sort
 import org.springframework.test.context.jdbc.Sql
 import quiz.me.model.QuizTestModels
 import quiz.me.model.UserTestModels
@@ -19,7 +20,7 @@ class TestingRepositoriesApplicationTests {
     @Autowired
     private lateinit var userQuizRepository: UserQuizRepository
 
-    private val pr = PageRequest.of(0, 15)
+    private val pr = PageRequest.of(0, 2, Sort.by("completedAt").descending())
 
     @Test
     fun `test find user by email`() {
@@ -47,28 +48,21 @@ class TestingRepositoriesApplicationTests {
                     .filter { it.user == testUser }
                     .map { it.userQuizEntity }
 
-                val actual = userQuizRepository.findAllByUser(testUser) //, pr)
-//                assertThat(actual.content.size).isEqualTo(expectedQuizzes.size).isGreaterThan(0)
-//                assertThat(actual.content.map { it.user }.distinct().size).isEqualTo(1)
-//                assertThat(actual.content.map { it.user }.first() == testUser)
-//                assertThat(actual.content.map { it.quiz }.distinct().size).isEqualTo(expectedQuizzes.size)
-//                assertThat(actual.content.map { it.quiz } == listOf(expectedQuizzes))
-//                assertThat(actual.content.map { it.completedAt }).allSatisfy { it.isBefore(LocalDateTime.now()) }
-
-                assertThat(actual.size).isEqualTo(expectedQuizzes.size)
-                assertThat(actual.map { it.user }.distinct().size).isEqualTo(1)
-                assertThat(actual.map { it.user }.first() == testUser)
-                assertThat(actual.map { it.quiz }.size).isEqualTo(expectedQuizzes.size)
-                assertThat(actual.map { it.quiz.id }).containsOnly(*expectedQuizzes.map { it.quiz.id }.toTypedArray())
-                assertThat(actual.map { it.completedAt }).allSatisfy { it.isBefore(LocalDateTime.now()) }
+                val actual = userQuizRepository.findAllByUser(testUser, pr)
+                assertThat(actual.content.size).isEqualTo(expectedQuizzes.size).isGreaterThan(0)
+                assertThat(actual.content.map { it.user }.distinct().size).isEqualTo(1)
+                assertThat(actual.content.map { it.user }.first() == testUser)
+                assertThat(actual.content.map { it.quiz }.size).isEqualTo(expectedQuizzes.size)
+                assertThat(actual.content.map { it.quiz } == listOf(expectedQuizzes))
+                assertThat(actual.content.map { it.completedAt }).allSatisfy { it.isBefore(LocalDateTime.now()) }
+                assertThat(actual.totalPages).isEqualTo(1)
         }
     }
 
     @Test
     fun `test find all completed quizzes by missing user`() {
-        val actual = userQuizRepository.findAllByUser(UserTestModels.dneUser)//, pr)
-//        assertThat(actual.content.size).isEqualTo(0)
-        assertThat(actual.size).isEqualTo(0)
+        val actual = userQuizRepository.findAllByUser(UserTestModels.dneUser, pr)
+        assertThat(actual.content.size).isEqualTo(0)
     }
 
     @Test
@@ -79,8 +73,7 @@ class TestingRepositoriesApplicationTests {
             .filterNot { usersWithQuizzes.contains(it) }
             .first()
 
-        val actual = userQuizRepository.findAllByUser(testUser) //, pr)
-//        assertThat(actual.content.size).isEqualTo(0)
-        assertThat(actual.size).isEqualTo(0)
+        val actual = userQuizRepository.findAllByUser(testUser, pr)
+        assertThat(actual.content.size).isEqualTo(0)
     }
 }

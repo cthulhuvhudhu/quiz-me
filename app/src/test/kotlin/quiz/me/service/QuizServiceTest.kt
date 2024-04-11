@@ -7,6 +7,8 @@ import org.mockito.Mockito.*
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.mock.mockito.MockBean
+import org.springframework.data.domain.PageImpl
+import org.springframework.data.domain.PageRequest
 import quiz.me.model.QuizTestModels
 import quiz.me.model.dto.failed
 import quiz.me.model.dto.success
@@ -21,21 +23,22 @@ class QuizServiceTest {
     private lateinit var quizRepository: QuizRepository
     @Autowired
     private lateinit var quizService: QuizService
+    private val pr = PageRequest.of(0, 2)
 
     @Test
     fun `test get all quizzes`() {
-        `when`(quizRepository.findAll())
-            .thenReturn(QuizTestModels.quizzes.map { it.entityOut })
-        val actual = quizService.getQuizzes()
-        assertThat(actual.size).isEqualTo(QuizTestModels.quizzes.size)
-        assertThat(actual).containsOnly(*QuizTestModels.quizzes.map{ it.dto }.toTypedArray())
+        `when`(quizRepository.findAll(pr))
+            .thenReturn(PageImpl(QuizTestModels.quizzes.map { it.entityOut }))
+        val actual = quizService.getQuizzes(pr)
+        assertThat(actual.content.size).isEqualTo(QuizTestModels.quizzes.size)
+        assertThat(actual.content).containsOnly(*QuizTestModels.quizzes.map{ it.dto }.toTypedArray())
     }
 
     @Test
     fun `test get all quizzes empty`() {
-        `when`(quizRepository.findAll()).thenReturn(emptyList())
-        val actual = quizService.getQuizzes()
-        assertThat(actual).isEmpty()
+        `when`(quizRepository.findAll(pr)).thenReturn(PageImpl(emptyList()))
+        val actual = quizService.getQuizzes(pr)
+        assertThat(actual.content).isEmpty()
     }
 
     @Test

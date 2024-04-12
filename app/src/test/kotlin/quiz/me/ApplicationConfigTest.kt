@@ -2,13 +2,14 @@ package quiz.me
 
 import org.assertj.core.api.AssertionsForClassTypes.assertThat
 import org.junit.jupiter.api.Test
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 
 @SpringBootTest
 class ApplicationConfigTest {
-
-    private val appConfig = ApplicationConfig()
+    @Autowired
+    private lateinit var appConfig: ApplicationConfig
 
     @Test
     fun `test password encoder bean`() {

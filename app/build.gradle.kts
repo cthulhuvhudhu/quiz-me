@@ -19,6 +19,7 @@ plugins {
     kotlin("jvm") version Version.kotlin
     kotlin("plugin.spring") version Version.kotlin
     kotlin("plugin.jpa") version Version.kotlin
+    kotlin("plugin.serialization") version Version.kotlin
     application
 }
 
@@ -42,6 +43,7 @@ dependencies {
     implementation("jakarta.validation:jakarta.validation-api:3.0.2")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
     implementation("org.jetbrains.kotlin:kotlin-reflect")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
 
     runtimeOnly("com.h2database:h2:2.2.224")
 

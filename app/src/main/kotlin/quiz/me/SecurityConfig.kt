@@ -23,8 +23,7 @@ class SecurityConfig(private val authenticationProvider: AuthenticationProvider)
                 matcherRegistry
                     .requestMatchers(HttpMethod.POST, "/api/register").permitAll()
                     .requestMatchers(HttpMethod.POST, "/actuator/shutdown").permitAll()
-//                    .anyRequest().authenticated()
-                    .anyRequest().permitAll()
+                    .anyRequest().authenticated()
             }
             .authenticationProvider(authenticationProvider)
             .build()

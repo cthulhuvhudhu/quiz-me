@@ -64,7 +64,15 @@ class QuizControllerTest {
     }
 
     @Test
-    fun `test get all quizzes empty`() {
+    fun `test GET all quizzes no auth`() {
+        mockMvc.get("$uri?page=0") {
+        }.andExpect {
+            status { isUnauthorized() }
+        }
+    }
+    @Test
+    @WithUserDetails("a@a.com")
+    fun `test GET all quizzes empty`() {
         val pr = PageRequest.of(0, 2)
         `when`(quizService.getQuizzes(pr)).thenReturn(PageImpl(emptyList()))
         mockMvc.get("$uri?page=0") {
@@ -76,7 +84,8 @@ class QuizControllerTest {
     }
 
     @Test
-    fun `test get all quizzes`() {
+    @WithUserDetails("a@a.com")
+    fun `test GET all quizzes`() {
         val pr = PageRequest.of(0, 2)
         val expectedContent = QuizTestModels.quizzes.map { it.dto }.take(2)
         `when`(quizService.getQuizzes(pr)).thenReturn(PageImpl(expectedContent))
@@ -100,7 +109,18 @@ class QuizControllerTest {
 
 
     @Test
-    fun `test get quiz by id`() {
+    fun `test GET quiz by id no auth`() {
+        QuizTestModels.quizzes.forEach {
+            mockMvc.get("$uri/${it.id}") {
+            }.andExpect {
+                status { isUnauthorized() }
+            }
+        }
+    }
+
+    @Test
+    @WithUserDetails("a@a.com")
+    fun `test GET quiz by id`() {
         QuizTestModels.quizzes.forEach {
             `when`(quizService.getQuiz(it.id)).thenReturn(it.dto)
             mockMvc.get("$uri/${it.id}") {
@@ -113,7 +133,8 @@ class QuizControllerTest {
     }
 
     @Test
-    fun `test get quiz by id does not exist`() {
+    @WithUserDetails("a@a.com")
+    fun `test GET quiz by id does not exist`() {
         val response = mockMvc.get("$uri/-1") {
             accept = mType
         }.andExpect {
@@ -124,8 +145,16 @@ class QuizControllerTest {
     }
 
     @Test
+    fun `test GET completed quizzes by user no auth`() {
+        mockMvc.get("$uri/completed?page=0&size=2") {
+        }.andExpect {
+            status { isUnauthorized() }
+        }
+    }
+
+    @Test
     @WithUserDetails("a@a.com")
-    fun `test get completed quizzes by user`() {
+    fun `test GET completed quizzes by user`() {
         val pr = PageRequest.of(0, 2)
         val testUser = UserTestModels.users.first()
         val testUserQuizzes = QuizTestModels.userQuizzes.filter { testUser.entityOut == it.user }
@@ -147,7 +176,7 @@ class QuizControllerTest {
 
     @Test
     @WithUserDetails("a@a.com")
-    fun `test get completed quizzes by user none`() {
+    fun `test GET completed quizzes by user none`() {
         val pr = PageRequest.of(0, 2)
 
         `when`(userQuizService.findAllByUserEmail(UserTestModels.users.first().email, pr))
@@ -161,11 +190,22 @@ class QuizControllerTest {
             content { jsonPath("$.content", CoreMatchers.equalToObject(listOf<Any>())) }
         }
     }
-    // TODO Testing authentication access
+
+    @Test
+    fun `test POST add quiz valid no auth`() {
+        val testQuiz = QuizTestModels.quizzes.first()
+
+        mockMvc.post(uri) {
+            contentType = mType
+            content = Json.encodeToJsonElement(testQuiz.createDto)
+        }.andExpect {
+            status { isUnauthorized() }
+        }
+    }
 
     @Test
     @WithUserDetails("a@a.com")
-    fun `test create quiz valid`() {
+    fun `test POST add quiz valid`() {
         val testQuiz = QuizTestModels.quizzes.first()
         val testUser = UserTestModels.users.first()
         `when`(quizService.addQuiz(testQuiz.createDto, UserEntity(email = testUser.email)))
@@ -183,9 +223,15 @@ class QuizControllerTest {
 
     @Test
     @WithUserDetails("a@a.com")
-    fun `test create quiz invalid`() {
+    fun `test POST add quiz invalid`() {
         val testQuiz = CreateQuizDTO(options = listOf("1","2","3","4"))
-        val res = doTest(Json.encodeToJsonElement(testQuiz))
+        val res = mockMvc.post(uri) {
+            contentType = mType
+            content = Json.encodeToJsonElement(testQuiz)
+            accept = mType
+        }.andExpect {
+            status { isBadRequest() }
+        }.andReturn()
 
         assertThat(res.resolvedException).isInstanceOf(MethodArgumentNotValidException::class.java)
         assertThat(res.resolvedException?.message).contains("Title is required for quiz")
@@ -193,16 +239,35 @@ class QuizControllerTest {
     }
 
     @Test
-    fun `test delete quiz`() {
+    fun `test DELETE quiz no auth`() {
         mockMvc.delete("$uri/1") {
-            contentType = mType
+        }.andExpect {
+            status { isUnauthorized() }
+        }
+    }
+
+    @Test
+    @WithUserDetails("a@a.com")
+    fun `test DELETE quiz`() {
+        mockMvc.delete("$uri/1") {
         }.andExpect {
             status { isNoContent() }
         }
     }
 
     @Test
-    fun `test check quiz answer success`() {
+    fun `test POST check quiz answer success no auth`() {
+        val guess = GuessDTO(listOf(1))
+        mockMvc.post("$uri/1/solve") {
+            contentType = mType
+            content = Json.encodeToJsonElement(guess)
+        }.andExpect {
+            status { isUnauthorized() }
+        }
+    }
+    @Test
+    @WithUserDetails("a@a.com")
+    fun `test POST check quiz answer success`() {
         val guess = GuessDTO(listOf(1))
         `when`(quizService.gradeQuiz(1, guess.answer)).thenReturn(success)
         mockMvc.post("$uri/1/solve") {
@@ -216,7 +281,8 @@ class QuizControllerTest {
     }
 
     @Test
-    fun `test check quiz answer failed`() {
+    @WithUserDetails("a@a.com")
+    fun `test POST check quiz answer failed`() {
         val guess = GuessDTO(listOf(2))
         `when`(quizService.gradeQuiz(1, guess.answer)).thenReturn(failed)
         mockMvc.post("$uri/1/solve") {
@@ -230,7 +296,8 @@ class QuizControllerTest {
     }
 
     @Test
-    fun `test check quiz answer does not exist`() {
+    @WithUserDetails("a@a.com")
+    fun `test POST check quiz answer does not exist`() {
         val guess = GuessDTO(listOf(2))
         `when`(quizService.gradeQuiz(1, guess.answer)).thenReturn(null)
         mockMvc.post("$uri/1/solve") {
@@ -240,15 +307,5 @@ class QuizControllerTest {
         }.andExpect {
             status { isNotFound() }
         }
-    }
-
-    private fun doTest(input: JsonElement): MvcResult {
-        return mockMvc.post(uri) {
-            contentType = mType
-            content = input
-            accept = mType
-        }.andExpect {
-            status { isBadRequest() }
-        }.andReturn()
     }
 }

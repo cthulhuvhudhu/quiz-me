@@ -3,6 +3,8 @@ package quiz.me.service
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.mockito.ArgumentCaptor
+import org.mockito.Captor
 import org.mockito.Mockito.*
 
 import org.springframework.beans.factory.annotation.Autowired
@@ -13,9 +15,12 @@ import org.springframework.data.domain.PageRequest
 import quiz.me.OwnershipPermissionDeniedException
 import quiz.me.QuizNotFoundException
 import quiz.me.model.QuizTestModels
+import quiz.me.model.UserTestModels
+import quiz.me.model.dao.QuizEntity
 import quiz.me.model.dto.failed
 import quiz.me.model.dto.success
 import quiz.me.repository.QuizRepository
+import quiz.me.repository.UserRepository
 import java.util.Optional
 import kotlin.test.assertNull
 
@@ -24,8 +29,14 @@ class QuizServiceTest {
 
     @MockBean
     private lateinit var quizRepository: QuizRepository
+    @MockBean
+    private lateinit var userRepository: UserRepository
     @Autowired
     private lateinit var quizService: QuizService
+
+    @Captor
+    private lateinit var quizCaptor: ArgumentCaptor<QuizEntity>
+
     private val pr = PageRequest.of(0, 2)
     private val testUserEmail = "a@a.com"
 
@@ -92,26 +103,76 @@ class QuizServiceTest {
     }
 
     @Test
-    fun `test grade quiz`() {
-        // Empty, single, and multiple solution sets (to three quizzes)
+    fun `test grade quiz correct is one answer`() {
         val possibleAnswers = QuizTestModels.quizzes.map { it.entityOut.answers }
-        QuizTestModels.quizzes.forEach {
-            `when`(quizRepository.findById(it.id))
-                .thenReturn(Optional.of(it.entityOut))
-            possibleAnswers.forEach { guess ->
-                val actual = quizService.gradeQuiz(it.id, guess)
-                if (guess == it.entityOut.answers) {
-                    assertThat(actual).isEqualTo(success)
-                } else {
-                    assertThat(actual).isEqualTo(failed)
-                }
+        val testUser = UserTestModels.users.first().entityOut
+        val testQuizSet = QuizTestModels.quizzes.first()
+        assertThat(testQuizSet.entityOut.completedQuizzes).isEmpty()
+        `when`(quizRepository.findById(testQuizSet.id))
+            .thenReturn(Optional.of(testQuizSet.entityOut))
+        `when`(userRepository.findUserByEmail(testUser.email)).thenReturn(testUser)
+        possibleAnswers.forEach { guess ->
+            val actual = quizService.gradeQuiz(testQuizSet.id, guess, testUser.email)
+            if (guess == testQuizSet.entityOut.answers) {
+                assertThat(actual).isEqualTo(success)
+                verify(quizRepository).save(quizCaptor.capture())
+                assertThat(quizCaptor.value.completedQuizzes.size).isEqualTo(1)
+            } else {
+                assertThat(actual).isEqualTo(failed)
             }
-            verify(quizRepository, times(3)).findById(it.id)
         }
+        verify(quizRepository, times(3)).findById(testQuizSet.id)
+    }
+
+    @Test
+    fun `test grade quiz correct is multiple answers`() {
+        val possibleAnswers = QuizTestModels.quizzes.map { it.entityOut.answers }
+        val testUser = UserTestModels.users[0].entityOut
+        val testQuizSet = QuizTestModels.quizzes[1]
+        assertThat(testQuizSet.entityOut.completedQuizzes).isEmpty()
+
+        `when`(quizRepository.findById(testQuizSet.id))
+            .thenReturn(Optional.of(testQuizSet.entityOut))
+        `when`(userRepository.findUserByEmail(testUser.email)).thenReturn(testUser)
+        possibleAnswers.forEach { guess ->
+            val actual = quizService.gradeQuiz(testQuizSet.id, guess, testUser.email)
+            if (guess == testQuizSet.entityOut.answers) {
+                assertThat(actual).isEqualTo(success)
+                verify(quizRepository).save(quizCaptor.capture())
+                assertThat(quizCaptor.value.completedQuizzes.size).isEqualTo(1)
+            } else {
+                assertThat(actual).isEqualTo(failed)
+            }
+        }
+        verify(quizRepository, times(3)).findById(testQuizSet.id)
+    }
+
+    @Test
+    fun `test grade quiz correct is no answers`() {
+        val possibleAnswers = QuizTestModels.quizzes.map { it.entityOut.answers }
+        val testUser = UserTestModels.users[0].entityOut
+        val testQuizSet = QuizTestModels.quizzes[2]
+        assertThat(testQuizSet.entityOut.completedQuizzes).isEmpty()
+
+        `when`(quizRepository.findById(testQuizSet.id))
+            .thenReturn(Optional.of(testQuizSet.entityOut))
+        `when`(userRepository.findUserByEmail(testUser.email)).thenReturn(testUser)
+        possibleAnswers.forEach { guess ->
+            val actual = quizService.gradeQuiz(testQuizSet.id, guess, testUser.email)
+            if (guess == testQuizSet.entityOut.answers) {
+                assertThat(actual).isEqualTo(success)
+                verify(quizRepository).save(quizCaptor.capture())
+                assertThat(quizCaptor.value.completedQuizzes.size).isEqualTo(1)
+            } else {
+                assertThat(actual).isEqualTo(failed)
+            }
+        }
+        verify(quizRepository, times(3)).findById(testQuizSet.id)
     }
 
     @Test
     fun `test grade quiz does not exist`() {
-        assertNull(quizService.gradeQuiz(-1, listOf()))
+        `when`(quizRepository.findById(-1)).thenReturn(Optional.empty())
+        assertNull(quizService.gradeQuiz(-1, listOf(), "a@a.com"))
     }
 }

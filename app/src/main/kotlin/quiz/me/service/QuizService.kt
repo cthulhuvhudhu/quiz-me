@@ -1,7 +1,5 @@
 package quiz.me.service
 
-//import engine.OwnershipPermissionDeniedException
-//import engine.QuizNotFoundException
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.repository.findByIdOrNull
@@ -10,6 +8,8 @@ import org.springframework.transaction.annotation.Transactional
 import quiz.me.OwnershipPermissionDeniedException
 import quiz.me.QuizNotFoundException
 import quiz.me.model.dao.UserEntity
+import quiz.me.model.dao.UserQuizEntity
+import quiz.me.model.dao.UserQuizKey
 import quiz.me.model.dto.CreateQuizDTO
 import quiz.me.model.dto.FeedbackDTO
 import quiz.me.model.dto.QuizDTO
@@ -18,10 +18,13 @@ import quiz.me.model.dto.success
 import quiz.me.model.dto.toDTO
 import quiz.me.model.dto.toEntity
 import quiz.me.repository.QuizRepository
+import quiz.me.repository.UserRepository
+import java.time.LocalDateTime
 
 @Service
 class QuizService(
-    private val quizRepository: QuizRepository
+    private val quizRepository: QuizRepository,
+    private val userRepository: UserRepository
 ) {
 
     fun getQuizzes(pr: PageRequest): Page<QuizDTO> =
@@ -39,16 +42,18 @@ class QuizService(
         quizRepository.deleteById(id)
     }
 
-    fun gradeQuiz(id: Long, answer: List<Int>): FeedbackDTO? = //, user: UserEntity
+    fun gradeQuiz(id: Long, answer: List<Int>, username: String): FeedbackDTO? =
         quizRepository.findByIdOrNull(id)?.run {
+            val user = userRepository.findUserByEmail(username)!!
             if (answer.size == this.answers.size && this.answers.toIntArray() contentEquals answer.toIntArray()) {
-//                UserQuizEntity(
-//                    UserQuizKey(user.id!!, this.id!!, LocalDateTime.now()),
-//                    quiz = this,
-//                    user = user,
-//                    completedAt = LocalDateTime.now()
-//                ).let { this.completedQuizzes.add(it) }
-//                quizRepository.save(this)
+                val time = LocalDateTime.now()
+                UserQuizEntity(
+                    UserQuizKey(user.id!!, this.id!!, time),
+                    quiz = this,
+                    user = user,
+                    completedAt = time
+                ).let { this.completedQuizzes.add(it) }
+                quizRepository.save(this)
                 return success
             } else {
                 return failed

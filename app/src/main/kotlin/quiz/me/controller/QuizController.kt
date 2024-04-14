@@ -87,11 +87,11 @@ class QuizController (
 
     @PostMapping("/{id}/solve")
     fun checkAnswer(
-//        @AuthenticationPrincipal user: UserEntity,
+        @AuthenticationPrincipal user: UserDetails,
         @PathVariable id: Long,
         @RequestBody guess: GuessDTO
     ): ResponseEntity<FeedbackDTO?> =
-        quizService.gradeQuiz(id, guess.answer)?.let { //, user)?.let {
+        quizService.gradeQuiz(id, guess.answer, user.username)?.let {
             return ResponseEntity
                 .ok()
                 .contentType(MediaType.APPLICATION_JSON)

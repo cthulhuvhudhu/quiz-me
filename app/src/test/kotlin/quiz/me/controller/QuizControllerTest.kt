@@ -290,7 +290,7 @@ class QuizControllerTest {
     @WithUserDetails("a@a.com")
     fun `test POST check quiz answer success`() {
         val guess = GuessDTO(listOf(1))
-        `when`(quizService.gradeQuiz(1, guess.answer)).thenReturn(success)
+        `when`(quizService.gradeQuiz(1, guess.answer, "a@a.com")).thenReturn(success)
         mockMvc.post("$uri/1/solve") {
             contentType = mType
             accept = mType
@@ -305,7 +305,7 @@ class QuizControllerTest {
     @WithUserDetails("a@a.com")
     fun `test POST check quiz answer failed`() {
         val guess = GuessDTO(listOf(2))
-        `when`(quizService.gradeQuiz(1, guess.answer)).thenReturn(failed)
+        `when`(quizService.gradeQuiz(1, guess.answer, "a@a.com")).thenReturn(failed)
         mockMvc.post("$uri/1/solve") {
             contentType = mType
             accept = mType
@@ -320,7 +320,7 @@ class QuizControllerTest {
     @WithUserDetails("a@a.com")
     fun `test POST check quiz answer does not exist`() {
         val guess = GuessDTO(listOf(2))
-        `when`(quizService.gradeQuiz(1, guess.answer)).thenReturn(null)
+        `when`(quizService.gradeQuiz(1, guess.answer, "a@a.com")).thenReturn(null)
         mockMvc.post("$uri/1/solve") {
             contentType = mType
             accept = mType

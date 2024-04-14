@@ -38,7 +38,7 @@ class TestingRepositoriesApplicationTests {
     }
 
     @Test
-    fun `test find a completed quiz by user`() {
+    fun `test find a completed quiz by user email`() {
         val usersWithQuizzes = QuizTestModels.userQuizzes.map { it.user }.distinct()
         UserTestModels.users
             .map { it.entityOut }
@@ -48,7 +48,7 @@ class TestingRepositoriesApplicationTests {
                     .filter { it.user == testUser }
                     .map { it.userQuizEntity }
 
-                val actual = userQuizRepository.findAllByUser(testUser, pr)
+                val actual = userQuizRepository.findAllByUser_Email(testUser.email, pr)
                 assertThat(actual.content.size).isEqualTo(expectedQuizzes.size).isGreaterThan(0)
                 assertThat(actual.content.map { it.user }.distinct().size).isEqualTo(1)
                 assertThat(actual.content.map { it.user }.first() == testUser)
@@ -61,7 +61,7 @@ class TestingRepositoriesApplicationTests {
 
     @Test
     fun `test find all completed quizzes by missing user`() {
-        val actual = userQuizRepository.findAllByUser(UserTestModels.dneUser, pr)
+        val actual = userQuizRepository.findAllByUser_Email(UserTestModels.dneUser.email, pr)
         assertThat(actual.content.size).isEqualTo(0)
     }
 
@@ -73,7 +73,7 @@ class TestingRepositoriesApplicationTests {
             .filterNot { usersWithQuizzes.contains(it) }
             .first()
 
-        val actual = userQuizRepository.findAllByUser(testUser, pr)
+        val actual = userQuizRepository.findAllByUser_Email(testUser.email, pr)
         assertThat(actual.content.size).isEqualTo(0)
     }
 }

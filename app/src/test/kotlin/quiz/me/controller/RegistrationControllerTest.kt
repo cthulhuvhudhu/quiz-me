@@ -14,27 +14,22 @@ import org.springframework.http.MediaType
 import org.springframework.test.context.ContextConfiguration
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.post
-import quiz.me.ApplicationConfig
 import quiz.me.SecurityConfig
 import quiz.me.model.UserTestModels
 import quiz.me.model.dto.UserDTO
-import quiz.me.repository.UserRepository
 import quiz.me.service.UserService
 import org.springframework.test.web.servlet.MvcResult
 import org.springframework.web.bind.MethodArgumentNotValidException
-import org.springframework.web.context.WebApplicationContext
 import quiz.me.RegistrationDeniedException
+import quiz.me.SpringSecurityWebAuxTestConfig
 
 @WebMvcTest(RegistrationController::class)
-@ContextConfiguration(classes = [ApplicationConfig::class, SecurityConfig::class,
-    RestResponseEntityExceptionHandler::class, WebApplicationContext::class])
+@ContextConfiguration(classes = [SpringSecurityWebAuxTestConfig::class, SecurityConfig::class,
+    RestResponseEntityExceptionHandler::class])
 @Import(RegistrationController::class)
-class RegistrationControllerRestTemplateTests(
-) {
+class RegistrationControllerTest {
     @MockBean
     private lateinit var userService: UserService
-    @MockBean // Used by applicationConfig
-    private lateinit var userRepository: UserRepository
 
     @Autowired
     private lateinit var mockMvc: MockMvc
@@ -53,7 +48,7 @@ class RegistrationControllerRestTemplateTests(
             content = Json.encodeToJsonElement(testUser.dto)
         }.andExpect {
             status { isOk() }
-        content { "" }
+            content { "" }
         }
     }
 

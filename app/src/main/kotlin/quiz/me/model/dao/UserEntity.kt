@@ -12,8 +12,7 @@ data class UserEntity (
     @Column(unique = true, nullable = false)
     val email: String,
     @Column(nullable = false)
-    internal val password: String,
-//    @Transient
+    internal var password: String? = null,
 //    @ElementCollection(fetch = FetchType.EAGER)
     internal val authority: String = "ROLE_USER",
     @OneToMany(mappedBy = "user")
@@ -23,7 +22,7 @@ data class UserEntity (
     override fun getAuthorities(): MutableCollection<SimpleGrantedAuthority> =
         mutableListOf(SimpleGrantedAuthority(authority))
 
-    override fun getPassword(): String = password
+    override fun getPassword(): String = password!!
 
     override fun getUsername(): String = email
 

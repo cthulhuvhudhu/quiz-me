@@ -24,12 +24,12 @@ class UserQuizServiceTest {
     private val pr = PageRequest.of(0, 2, Sort.by("completedAt").descending())
 
     @Test
-    fun `test find all completed quizzes by user`() {
+    fun `test find all completed quizzes by user email`() {
         UserTestModels.users.map{ it.entityOut }.forEach { user ->
             val userQuizzes = QuizTestModels.userQuizzes.filter { it.user == user }
             val repoResponse = PageImpl(userQuizzes.map { it.userQuizEntity })
-            `when`(userQuizRepository.findAllByUser(user, pr)).thenReturn(repoResponse)
-            val actual = userQuizService.findAllByUser(user, pr)
+            `when`(userQuizRepository.findAllByUser_Email(user.email, pr)).thenReturn(repoResponse)
+            val actual = userQuizService.findAllByUserEmail(user.email, pr)
             assertThat(actual)
                 .containsOnly(*userQuizzes.map { it.userQuizDTO }.toTypedArray())
                 .withFailMessage("Check for user '%s' completed quizzes failed", user.email)
@@ -37,9 +37,10 @@ class UserQuizServiceTest {
     }
 
     @Test
-    fun `test find all completed quizzes by user does not exist`() {
-        `when`(userQuizRepository.findAllByUser(UserTestModels.dneUser, pr)).thenReturn(PageImpl(emptyList()))
-        val actual = userQuizService.findAllByUser(UserTestModels.dneUser, pr)
+    fun `test find all completed quizzes by user email does not exist`() {
+        `when`(userQuizRepository.findAllByUser_Email(UserTestModels.dneUser.email, pr))
+            .thenReturn(PageImpl(emptyList()))
+        val actual = userQuizService.findAllByUserEmail(UserTestModels.dneUser.email, pr)
         assertThat(actual).isEmpty()
     }
 }

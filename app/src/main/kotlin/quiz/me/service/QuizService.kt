@@ -30,7 +30,7 @@ class QuizService(
     fun addQuiz(createQuizDTO: CreateQuizDTO, user: UserEntity) =
         quizRepository.save(createQuizDTO.toEntity(user)).toDTO()
 
-    @Transactional
+    @Transactional // TODO add deleter privs (after auth and spring sec testing)
     fun deleteQuiz(id: Long) { //deleter: UserEntity
 //        val quiz = quizRepository.findByIdOrNull(id) ?: throw QuizNotFoundException(id)
 //        if (quiz.author != deleter) throw OwnershipPermissionDeniedException()

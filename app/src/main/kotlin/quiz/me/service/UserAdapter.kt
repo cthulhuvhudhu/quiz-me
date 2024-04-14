@@ -30,6 +30,4 @@ class UserAdapter(private val user: UserEntity) : UserDetails {
     override fun hashCode(): Int {
         return user.hashCode()
     }
-
-
 }

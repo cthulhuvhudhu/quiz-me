@@ -1,30 +1,25 @@
 package quiz.me
 
+import org.springframework.boot.test.context.TestConfiguration
 import org.springframework.context.annotation.Bean
-import org.springframework.context.annotation.Configuration
+import org.springframework.context.annotation.Primary
 import org.springframework.security.authentication.AuthenticationManager
 import org.springframework.security.authentication.AuthenticationProvider
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration
 import org.springframework.security.core.userdetails.UserDetailsService
-import org.springframework.security.core.userdetails.UsernameNotFoundException
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 import org.springframework.security.crypto.password.PasswordEncoder
-import quiz.me.repository.UserRepository
+import org.springframework.security.provisioning.InMemoryUserDetailsManager
+import quiz.me.model.UserTestModels
 
-@Configuration
-class ApplicationConfig(
-    private val userRepository: UserRepository
-) {
+@TestConfiguration
+class SpringSecurityWebAuxTestConfig {
     @Bean
-    fun passwordEncoder(): PasswordEncoder = BCryptPasswordEncoder(12)
-
-    @Bean
-    fun userDetailsService(): UserDetailsService? {
-        return UserDetailsService { username: String? -> username
-            ?.let { userRepository.findUserByEmail(it) }
-            ?: throw UsernameNotFoundException("User not found")
-        }
+    @Primary
+    fun userDetailsService(): UserDetailsService {
+        val testUser = UserTestModels.users.first().entityOut
+        return InMemoryUserDetailsManager(testUser)
     }
 
     @Bean
@@ -34,6 +29,9 @@ class ApplicationConfig(
 
         return authenticationProvider
     }
+
+    @Bean
+    fun passwordEncoder(): PasswordEncoder = BCryptPasswordEncoder(12)
 
     @Bean
     fun authenticationManager(config: AuthenticationConfiguration): AuthenticationManager {

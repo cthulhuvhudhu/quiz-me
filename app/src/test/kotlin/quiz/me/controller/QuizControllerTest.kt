@@ -1,7 +1,6 @@
 package quiz.me.controller
 
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.encodeToJsonElement
 import org.assertj.core.api.Assertions.assertThat
 import org.hamcrest.CoreMatchers
@@ -27,6 +26,8 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders
 import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.context.WebApplicationContext
 import org.springframework.web.server.ResponseStatusException
+import quiz.me.OwnershipPermissionDeniedException
+import quiz.me.QuizNotFoundException
 import quiz.me.SecurityConfig
 import quiz.me.SpringSecurityWebAuxTestConfig
 import quiz.me.model.QuizTestModels
@@ -243,6 +244,26 @@ class QuizControllerTest {
         mockMvc.delete("$uri/1") {
         }.andExpect {
             status { isUnauthorized() }
+        }
+    }
+
+    @Test
+    @WithUserDetails("a@a.com")
+    fun `test DELETE quiz not owner`() {
+        `when`(quizService.deleteQuiz(1, "a@a.com")).thenThrow(OwnershipPermissionDeniedException::class.java)
+        mockMvc.delete("$uri/1") {
+        }.andExpect {
+            status { isForbidden() }
+        }
+    }
+
+    @Test
+    @WithUserDetails("a@a.com")
+    fun `test DELETE quiz not exists`() {
+        `when`(quizService.deleteQuiz(1, "a@a.com")).thenThrow(QuizNotFoundException::class.java)
+        mockMvc.delete("$uri/1") {
+        }.andExpect {
+            status { isNotFound() }
         }
     }
 

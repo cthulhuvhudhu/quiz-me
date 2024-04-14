@@ -7,6 +7,8 @@ import org.springframework.data.domain.PageRequest
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import quiz.me.OwnershipPermissionDeniedException
+import quiz.me.QuizNotFoundException
 import quiz.me.model.dao.UserEntity
 import quiz.me.model.dto.CreateQuizDTO
 import quiz.me.model.dto.FeedbackDTO
@@ -30,10 +32,10 @@ class QuizService(
     fun addQuiz(createQuizDTO: CreateQuizDTO, user: UserEntity) =
         quizRepository.save(createQuizDTO.toEntity(user)).toDTO()
 
-    @Transactional // TODO add deleter privs (after auth and spring sec testing)
-    fun deleteQuiz(id: Long) { //deleter: UserEntity
-//        val quiz = quizRepository.findByIdOrNull(id) ?: throw QuizNotFoundException(id)
-//        if (quiz.author != deleter) throw OwnershipPermissionDeniedException()
+    @Transactional
+    fun deleteQuiz(id: Long, deleterEmail: String) {
+        val quiz = quizRepository.findByIdOrNull(id) ?: throw QuizNotFoundException(id)
+        if (deleterEmail != quiz.author.email) throw OwnershipPermissionDeniedException()
         quizRepository.deleteById(id)
     }
 

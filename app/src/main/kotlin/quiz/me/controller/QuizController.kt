@@ -81,9 +81,9 @@ class QuizController (
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     fun deleteQuiz(
-//        @AuthenticationPrincipal user: UserEntity,
+        @AuthenticationPrincipal user: UserDetails,
         @PathVariable id: Long
-    ) = quizService.deleteQuiz(id)//, user) // TODO
+    ) = quizService.deleteQuiz(id, user.username)
 
     @PostMapping("/{id}/solve")
     fun checkAnswer(

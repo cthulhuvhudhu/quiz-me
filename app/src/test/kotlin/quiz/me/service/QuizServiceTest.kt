@@ -2,6 +2,7 @@ package quiz.me.service
 
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.mockito.Mockito.*
 
 import org.springframework.beans.factory.annotation.Autowired
@@ -9,6 +10,8 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.PageRequest
+import quiz.me.OwnershipPermissionDeniedException
+import quiz.me.QuizNotFoundException
 import quiz.me.model.QuizTestModels
 import quiz.me.model.dto.failed
 import quiz.me.model.dto.success
@@ -24,6 +27,7 @@ class QuizServiceTest {
     @Autowired
     private lateinit var quizService: QuizService
     private val pr = PageRequest.of(0, 2)
+    private val testUserEmail = "a@a.com"
 
     @Test
     fun `test get all quizzes`() {
@@ -69,16 +73,22 @@ class QuizServiceTest {
 
     @Test
     fun `test delete quiz exists`() {
-        QuizTestModels.quizzes.forEach {
-            quizService.deleteQuiz(it.id)
-            verify(quizRepository, times(1)).deleteById(it.id)
-        }
+        val testQuiz = QuizTestModels.quizzes.first().entityOut
+        `when`(quizRepository.findById(testQuiz.id!!)).thenReturn(Optional.of(testQuiz))
+        quizService.deleteQuiz(testQuiz.id!!, testUserEmail)
+        verify(quizRepository, times(1)).deleteById(testQuiz.id!!)
     }
 
     @Test
     fun `test delete quiz does not exist`() {
-        quizService.deleteQuiz(-1)
-        verify(quizRepository, times(1)).deleteById(-1)
+        `when`(quizRepository.findById(-1)).thenReturn(Optional.empty())
+        assertThrows<QuizNotFoundException> { quizService.deleteQuiz(-1, testUserEmail) }
+    }
+
+    @Test
+    fun `test delete quiz deleter not creator`() {
+        `when`(quizRepository.findById(1)).thenReturn(Optional.of(QuizTestModels.quizzes.first().entityOut))
+        assertThrows<OwnershipPermissionDeniedException> { quizService.deleteQuiz(1, "deleterEmail") }
     }
 
     @Test

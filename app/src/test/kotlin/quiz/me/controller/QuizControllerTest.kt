@@ -80,7 +80,7 @@ class QuizControllerTest {
             accept = mType
         }.andExpect {
             status { isOk() }
-            content { "" }
+            content { string("") }
         }
     }
 

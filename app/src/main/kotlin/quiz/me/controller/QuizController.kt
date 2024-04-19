@@ -53,7 +53,7 @@ class QuizController (
                 .body(it)
         } ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "Quiz not found for id = $id")
 
-    @GetMapping("/completed", params = ["page"])
+    @GetMapping("/completed", params = ["page"]) // TODO should work without but doesn't
     fun getCompletedQuizzes(
         @AuthenticationPrincipal user: UserDetails,
         @RequestParam("page", defaultValue = "0") page: Int,

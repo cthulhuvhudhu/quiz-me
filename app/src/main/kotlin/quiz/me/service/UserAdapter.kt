@@ -5,7 +5,8 @@ import org.springframework.security.core.GrantedAuthority
 import org.springframework.security.core.userdetails.UserDetails
 
 class UserAdapter(private val user: UserEntity) : UserDetails {
-    override fun getAuthorities(): Collection<GrantedAuthority>  = user.authorities.toList()
+    override fun getAuthorities(): Collection<GrantedAuthority>  =
+        user.getAuthorities() // tODO all these getters are stock, still need this class?
 
     override fun getPassword(): String = requireNotNull(user.password)
 

@@ -46,7 +46,7 @@ class QuizController (
     @GetMapping("/{id}")
     fun getQuiz(
         @PathVariable id: Long
-    ): ResponseEntity<QuizDTO?> = // TODO remove ?
+    ): ResponseEntity<QuizDTO> =
         quizService.getQuiz(id)?.let {
             return ResponseEntity
                 .ok()
@@ -54,7 +54,7 @@ class QuizController (
                 .body(it)
         } ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "Quiz not found for id = $id")
 
-    @GetMapping("/completed", params = ["page"]) // TODO should work without but doesn't
+    @GetMapping("/completed")
     fun getCompletedQuizzes(
         @AuthenticationPrincipal user: UserDetails,
         @RequestParam("page", defaultValue = "0") page: Int,
@@ -91,7 +91,7 @@ class QuizController (
         @AuthenticationPrincipal user: UserDetails,
         @PathVariable id: Long,
         @RequestBody guess: GuessDTO
-    ): ResponseEntity<FeedbackDTO?> = // TODO nullable?
+    ): ResponseEntity<FeedbackDTO> =
         quizService.gradeQuiz(id, guess.answer, user.username).let {
             return ResponseEntity
                 .ok()

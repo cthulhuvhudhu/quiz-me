@@ -19,6 +19,7 @@ import quiz.me.controller.RestResponseEntityExceptionHandler
 import quiz.me.model.TestUtils.JacksonPage
 import quiz.me.model.dto.*
 import quiz.me.model.typeReference
+import java.time.LocalDateTime
 
 @Sql(scripts = ["classpath:schema.sql"])
 @SpringBootTest(
@@ -56,7 +57,7 @@ class QuizMeApplicationIntegrationTest {
     }
 
     @Test
-    fun `when GET quizzes no auth`() {
+    fun `when GET quizzes no auth ERROR`() {
         var result = restTemplate.exchange(quizUri, HttpMethod.GET, defaultHeaders, typeReference<JacksonPage<QuizDTO>>())
         assertThat(result).isNotNull
         assertThat(result!!.statusCode).isEqualTo(HttpStatus.UNAUTHORIZED)
@@ -123,7 +124,7 @@ class QuizMeApplicationIntegrationTest {
     }
 
     @Test
-    fun `when GET quiz by id no auth`() {
+    fun `when GET quiz by id no auth ERROR`() {
         var result = restTemplate.exchange("$quizUri/1", HttpMethod.GET, defaultHeaders, QuizDTO::class.java)
         assertThat(result).isNotNull
         assertThat(result!!.statusCode).isEqualTo(HttpStatus.UNAUTHORIZED)
@@ -160,7 +161,76 @@ class QuizMeApplicationIntegrationTest {
     }
 
     @Test
-    fun `when POST add quiz no auth`() {
+    fun `when GET completed quizzes no auth ERROR`() {
+        var result = restTemplate.exchange("$quizUri/completed", HttpMethod.GET, defaultHeaders, typeReference<JacksonPage<ViewCompletedQuizDTO>>())
+        assertThat(result).isNotNull
+        assertThat(result!!.statusCode).isEqualTo(HttpStatus.UNAUTHORIZED)
+        assertThat(result.body).isNull()
+
+        result = restTemplate
+            .withBasicAuth(testUserDNE.email, testUserDNE.password)
+            .exchange("$quizUri/completed", HttpMethod.POST, defaultHeaders, typeReference<JacksonPage<ViewCompletedQuizDTO>>())
+        assertThat(result).isNotNull
+        assertThat(result!!.statusCode).isEqualTo(HttpStatus.UNAUTHORIZED)
+        assertThat(result.body).isNull()
+    }
+
+    @Test
+    fun `when GET completed quizzes RETURN empty`() {
+        val result = restTemplate
+            .withBasicAuth(testUserA.email, testUserA.password)
+            .exchange("$quizUri/completed", HttpMethod.GET, defaultHeaders, typeReference<JacksonPage<ViewCompletedQuizDTO>>())
+        assertThat(result).isNotNull
+        assertThat(result!!.statusCode).isEqualTo(HttpStatus.OK)
+        assertThat(result.body!!.content).isEmpty()
+    }
+
+    // TODO userquiz is failing
+    @Test
+    fun `when GET completed quizzes RETURN first page`() {
+        val completedDTOs =  (1..8).map { writeQuiz(it, if (it % 2 == 0) testUserA else testUserB) }
+            .map { ViewCompletedQuizDTO(it.second.id!!, solveQuiz(it.second.id!!, GuessDTO(it.first.answer), testUserA)) }
+        val result = restTemplate
+            .withBasicAuth(testUserA.email, testUserA.password)
+            .exchange("$quizUri/completed", HttpMethod.GET, defaultHeaders, typeReference<JacksonPage<ViewCompletedQuizDTO>>())
+        assertThat(result).isNotNull
+        assertThat(result!!.statusCode).isEqualTo(HttpStatus.OK)
+        assertThat(result.body).isNotNull
+        val page = result.body as PageImpl<*>
+        assertThat(page.isFirst).isTrue()
+        assertThat(page.size).isEqualTo(QuizController.Companion.DEFAULT_PAGE_SIZE.toInt())
+        assertThat(page.number).isEqualTo(0)
+        assertThat(page.totalPages).isEqualTo(1)
+        assertThat(page.numberOfElements).isEqualTo(8)
+        assertThat(page.totalElements).isEqualTo(8)
+        assertThat(page.content).containsExactlyElementsOf(completedDTOs)
+    }
+
+    // TODO userquiz is failing
+    @Test
+    fun `when GET completed quizzes RETURN 2 of 3 pages`() {
+        val completedDTOs =  (1..25).map { writeQuiz(it, if (it % 2 == 0) testUserA else testUserB) }
+            .map { ViewCompletedQuizDTO(it.second.id!!, solveQuiz(it.second.id!!, GuessDTO(it.first.answer), testUserA)) }
+        val result = restTemplate
+            .withBasicAuth(testUserA.email, testUserA.password)
+            .exchange("$quizUri/completed?page=1", HttpMethod.GET, defaultHeaders, typeReference<JacksonPage<ViewCompletedQuizDTO>>())
+        assertThat(result).isNotNull
+        assertThat(result!!.statusCode).isEqualTo(HttpStatus.OK)
+        assertThat(result.body).isNotNull
+        val page = result.body as PageImpl<*>
+        assertThat(page.isFirst).isFalse()
+        assertThat(page.number).isEqualTo(1)
+        assertThat(page.totalPages).isEqualTo(3)
+        assertThat(page.numberOfElements).isEqualTo(QuizController.Companion.DEFAULT_PAGE_SIZE.toInt())
+        assertThat(page.totalElements).isEqualTo(25)
+        assertThat(page.content).containsExactlyElementsOf(completedDTOs.drop(10).take(10))
+    }
+
+    // TODO
+    // ... consider E2E
+
+    @Test
+    fun `when POST add quiz no auth ERROR`() {
         val addQuizDTO = CreateQuizDTO("title", "text", listOf("1", "2", "3", "4"), listOf(1))
         val body = Json.encodeToJsonElement(addQuizDTO).toString()
         val httpEntity = HttpEntity(body, defaultHeaders.headers)
@@ -178,7 +248,7 @@ class QuizMeApplicationIntegrationTest {
     }
 
     @Test
-    fun `when POST invalid quiz RETURN bad request`() {
+    fun `when POST invalid quiz ERROR bad request`() {
         val createDTO = CreateQuizDTO(
             options = listOf("1"),
             answer = listOf(1)
@@ -229,7 +299,7 @@ class QuizMeApplicationIntegrationTest {
     }
 
     @Test
-    fun `when DELETE quiz no auth`() {
+    fun `when DELETE quiz no auth ERROR`() {
         val quizUri = "$quizUri/1"
         var result = restTemplate.exchange(quizUri, HttpMethod.DELETE, defaultHeaders, typeReference<JacksonPage<QuizDTO>>())
         assertThat(result).isNotNull
@@ -245,7 +315,7 @@ class QuizMeApplicationIntegrationTest {
     }
 
     @Test
-    fun `when DELETE quiz does not exist RETURN not found`() {
+    fun `when DELETE quiz does not exist ERROR not found`() {
         val result = restTemplate
             .withBasicAuth(testUserA.email, testUserA.password)
             .exchange("$quizUri/1", HttpMethod.DELETE, defaultHeaders, ProblemDetail::class.java)
@@ -256,7 +326,7 @@ class QuizMeApplicationIntegrationTest {
     }
 
     @Test
-    fun `when DELETE quiz unauthorized RETURN forbidden`() {
+    fun `when DELETE quiz unauthorized ERROR forbidden`() {
         val viewDTO = writeQuiz(1, testUserB).second
 
         val result = restTemplate
@@ -281,7 +351,7 @@ class QuizMeApplicationIntegrationTest {
     }
 
     @Test
-    fun `when POST check quiz answer no auth`() {
+    fun `when POST check quiz answer no auth ERROR`() {
         val quizUri = "$quizUri/1/solve"
         val addQuizDTO = CreateQuizDTO("title", "text", listOf("1", "2", "3", "4"), listOf(1))
         val body = Json.encodeToJsonElement(addQuizDTO).toString()
@@ -300,7 +370,7 @@ class QuizMeApplicationIntegrationTest {
     }
 
     @Test
-    fun `when POST solution quiz does not exist RETURN not found`() {
+    fun `when POST solution quiz does not exist ERROR not found`() {
         val guessDTO = GuessDTO(listOf(1))
         val httpEntity = HttpEntity(Json.encodeToJsonElement(guessDTO), defaultHeaders.headers)
         val result = restTemplate
@@ -339,7 +409,7 @@ class QuizMeApplicationIntegrationTest {
     }
 
     @Test
-    fun `when POST invalid body solution RETURN bad request`() {
+    fun `when POST invalid body solution ERROR bad request`() {
         val quizDTOs = writeQuiz()
         val result = restTemplate
             .withBasicAuth(testUserA.email, testUserA.password)
@@ -350,11 +420,37 @@ class QuizMeApplicationIntegrationTest {
         assertThat(errors.size).isEqualTo(1)
         assertThat(errors[0].toString()).contains("Required request body")
     }
+    @Test
+    fun `when POST invalid user registration ERROR`() {
+        val user = Json.encodeToJsonElement(UserDTO("notanemail", "1234"))
+        val httpEntity = HttpEntity(user, defaultHeaders.headers)
+        val expected = listOf("Email is not valid", "Password must be 5 characters or more")
+        val result = restTemplate.postForEntity(registrationUri, httpEntity, ProblemDetail::class.java)
+        assertThat(result).isNotNull
+        assertThat(result.statusCode).isEqualTo(HttpStatus.BAD_REQUEST)
+        val errors = result.body!!.properties!!["errors"] as List<*>
+        assertThat(errors).containsOnly(*expected.toTypedArray())
+    }
 
-    // TODO
-    //completed
-    // ... consider E2E
-    // ... we have TODOs
+    @Test
+    fun `when POST duplicate user registration ERROR`() {
+        val user = Json.encodeToJsonElement(testUserA)
+        val httpEntity = HttpEntity(user, defaultHeaders.headers)
+        val result = restTemplate.postForEntity(registrationUri, httpEntity, ProblemDetail::class.java)
+        assertThat(result).isNotNull
+        assertThat(result.statusCode).isEqualTo(HttpStatus.BAD_REQUEST)
+        val errors = result.body!!.properties!!["errors"] as List<*>
+        assertThat(errors).containsExactly("Registration is not permitted at this time. Please try again later or with different credentials.")
+    }
+
+    @Test
+    fun `when POST user registration RETURN`() {
+        val user = Json.encodeToJsonElement(testUserDNE)
+        val httpEntity = HttpEntity(user, defaultHeaders.headers)
+        val result = restTemplate.postForEntity(registrationUri, httpEntity, Nothing::class.java)
+        assertThat(result).isNotNull
+        assertThat(result.statusCode).isEqualTo(HttpStatus.OK)
+    }
 
     private fun registerUser(userDTO: UserDTO) {
         val user = Json.encodeToJsonElement(userDTO)
@@ -370,6 +466,14 @@ class QuizMeApplicationIntegrationTest {
             listOf(1)
         )
         return createDTO to createQuiz(createDTO, author)
+    }
+
+    private fun solveQuiz(id: Long, guess: GuessDTO, solver: UserDTO): LocalDateTime {
+        val httpEntity = HttpEntity(guess, defaultHeaders.headers)
+        restTemplate
+            .withBasicAuth(solver.email, solver.password)
+            .postForEntity("$quizUri/$id/solve", httpEntity, ViewCompletedQuizDTO::class.java).body!!
+        return LocalDateTime.now()
     }
 
     private fun createQuiz(quizDTO: CreateQuizDTO, author: UserDTO): QuizDTO {

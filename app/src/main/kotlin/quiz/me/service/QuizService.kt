@@ -3,7 +3,6 @@ package quiz.me.service
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.repository.findByIdOrNull
-import org.springframework.security.core.userdetails.UsernameNotFoundException
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import quiz.me.OwnershipPermissionDeniedException
@@ -32,7 +31,6 @@ class QuizService(
 
     fun getQuiz(id: Long): QuizDTO? = quizRepository.findByIdOrNull(id)?.toDTO()
 
-//    @Transactional
     fun addQuiz(createQuizDTO: CreateQuizDTO, username: String): QuizDTO {
         val user = userRepository.findUserByEmail(username)!!
 //            TODO ?: throw UsernameNotFoundException("User not found")

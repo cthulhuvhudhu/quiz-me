@@ -154,6 +154,57 @@ class QuizMeApplicationIntegrationTest {
         assertThat(result.body).isEqualTo(viewDTO)
     }
 
+    @Test
+    fun `when POST quiz RETURN`() {
+        val createDTO = CreateQuizDTO(
+            "Title_1",
+            "Text_1",
+            listOf("1", "2", "3", "4"),
+            listOf(1)
+        )
+
+        val quiz = Json.encodeToJsonElement(createDTO)
+        val httpEntity = HttpEntity(quiz, defaultHeaders.headers)
+
+        val result = restTemplate
+            .withBasicAuth(testUserB.email, testUserB.password)
+            .postForEntity(quizUri, httpEntity, QuizDTO::class.java)
+        assertThat(result).isNotNull
+        assertThat(result!!.statusCode).isEqualTo(HttpStatus.OK)
+        assertThat(result.body).isNotNull()
+        val quizDTO = result.body!!
+        assertThat(quizDTO.title).isEqualTo(createDTO.title)
+        assertThat(quizDTO.text).isEqualTo(createDTO.text)
+        assertThat(quizDTO.options).isEqualTo(createDTO.options)
+        assertThat(quizDTO.id).isNotNull()
+    }
+
+    @Test
+    fun `when POST invalid quiz RETURN bad request`() {
+        val createDTO = CreateQuizDTO(
+            options = listOf("1"),
+            answer = listOf(1)
+        )
+
+        val expectedErrors = listOf(
+            "Title is required for quiz",
+            "Text is required for quiz",
+            "At least two answer options are required for quiz",
+        )
+
+        val quiz = Json.encodeToJsonElement(createDTO)
+        val httpEntity = HttpEntity(quiz, defaultHeaders.headers)
+
+        val result = restTemplate
+            .withBasicAuth(testUserB.email, testUserB.password)
+            .postForEntity(quizUri, httpEntity, ProblemDetail::class.java)
+        assertThat(result).isNotNull
+        assertThat(result!!.statusCode).isEqualTo(HttpStatus.BAD_REQUEST)
+        assertThat(result.body).isNotNull()
+        val errors: List<String> = result.body!!.properties?.get("errors") as List<String>
+        assertThat(errors).contains(*expectedErrors.toTypedArray())
+    }
+
     private fun registerUser(userDTO: UserDTO) {
         val user = Json.encodeToJsonElement(userDTO)
         val httpEntity = HttpEntity(user, defaultHeaders.headers)

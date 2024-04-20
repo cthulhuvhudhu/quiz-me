@@ -201,8 +201,56 @@ class QuizMeApplicationIntegrationTest {
         assertThat(result).isNotNull
         assertThat(result!!.statusCode).isEqualTo(HttpStatus.BAD_REQUEST)
         assertThat(result.body).isNotNull()
-        val errors: List<String> = result.body!!.properties?.get("errors") as List<String>
+        val errors = result.body!!.properties!!["errors"] as List<*>
         assertThat(errors).contains(*expectedErrors.toTypedArray())
+    }
+
+    @Test
+    fun `when DELETE quiz does not exist RETURN not found`() {
+        val result = restTemplate
+            .withBasicAuth(testUserA.email, testUserA.password)
+            .exchange("$quizUri/1", HttpMethod.DELETE, defaultHeaders, ProblemDetail::class.java)
+        assertThat(result).isNotNull()
+        assertThat(result!!.statusCode).isEqualTo(HttpStatus.NOT_FOUND)
+        val errors = result.body!!.properties!!["errors"] as List<*>
+        assertThat(errors).containsOnly("Unable to find quiz '1'")
+    }
+
+    @Test
+    fun `when DELETE quiz unauthorized RETURN forbidden`() {
+        val createDTO = CreateQuizDTO(
+            "Title_1",
+            "Text_1",
+            listOf("1", "2", "3", "4"),
+            listOf(1)
+        )
+        val viewDTO = createQuiz(createDTO, testUserB)
+
+        val result = restTemplate
+            .withBasicAuth(testUserA.email, testUserA.password)
+            .exchange("$quizUri/${viewDTO.id!!}", HttpMethod.DELETE, defaultHeaders, ProblemDetail::class.java)
+        assertThat(result).isNotNull()
+        assertThat(result!!.statusCode).isEqualTo(HttpStatus.FORBIDDEN)
+        val errors = result.body!!.properties!!["errors"] as List<*>
+        assertThat(errors).containsOnly("You do not have permission to delete the quiz")
+    }
+
+    @Test
+    fun `when DELETE quiz RETURN`() {
+        val createDTO = CreateQuizDTO(
+            "Title_1",
+            "Text_1",
+            listOf("1", "2", "3", "4"),
+            listOf(1)
+        )
+        val viewDTO = createQuiz(createDTO, testUserA)
+
+        val result = restTemplate
+            .withBasicAuth(testUserA.email, testUserA.password)
+            .exchange("$quizUri/${viewDTO.id!!}", HttpMethod.DELETE, defaultHeaders, Object::class.java)
+        assertThat(result).isNotNull()
+        assertThat(result!!.statusCode).isEqualTo(HttpStatus.NO_CONTENT)
+        assertThat(result.body).isNull()
     }
 
     private fun registerUser(userDTO: UserDTO) {

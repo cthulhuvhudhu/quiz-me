@@ -23,7 +23,7 @@ class ApplicationConfig(
     fun userDetailsService(): UserDetailsService? {
         return UserDetailsService { username: String? -> username
             ?.let { userRepository.findUserByEmail(it) }
-            ?: throw UsernameNotFoundException("User not found")
+            ?: throw UsernameNotFoundException("User not found") // TODO refactor this to userService (3 calls)
         }
     }
 

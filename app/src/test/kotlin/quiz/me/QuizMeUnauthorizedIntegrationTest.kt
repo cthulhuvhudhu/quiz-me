@@ -23,8 +23,6 @@ class QuizMeUnauthorizedIntegrationTest {
 
     @Autowired
     lateinit var restTemplate: TestRestTemplate
-    @Autowired
-    lateinit var testUtils: TestUtils
 
     private final val uri = "/api"
     private final val quizUri = "$uri/quizzes"
@@ -45,9 +43,9 @@ class QuizMeUnauthorizedIntegrationTest {
         Assertions.assertThat(result!!.statusCode).isEqualTo(HttpStatus.UNAUTHORIZED)
         Assertions.assertThat(result.body).isNull()
 
-        val headers = testUtils.createAuthHeader(testUsername, testPassword)
-        val httpEntity = HttpEntity<String>(headers)
-        result = restTemplate.exchange(quizUri, HttpMethod.GET, httpEntity, typeReference<TestUtils.JacksonPage<QuizDTO>>())
+        result = restTemplate
+            .withBasicAuth(testUsername, testPassword)
+            .exchange(quizUri, HttpMethod.GET, defaultHeaders, typeReference<TestUtils.JacksonPage<QuizDTO>>())
         Assertions.assertThat(result).isNotNull()
         Assertions.assertThat(result!!.statusCode).isEqualTo(HttpStatus.UNAUTHORIZED)
         Assertions.assertThat(result.body).isNull()
@@ -55,14 +53,14 @@ class QuizMeUnauthorizedIntegrationTest {
 
     @Test
     fun `when GET quiz by id no auth`() {
-        var result = restTemplate.exchange("$quizUri/1", HttpMethod.GET, null, QuizDTO::class.java)
+        var result = restTemplate.exchange("$quizUri/1", HttpMethod.GET, defaultHeaders, QuizDTO::class.java)
         Assertions.assertThat(result).isNotNull()
         Assertions.assertThat(result!!.statusCode).isEqualTo(HttpStatus.UNAUTHORIZED)
         Assertions.assertThat(result.body).isNull()
 
-        val headers = testUtils.createAuthHeader(testUsername, testPassword)
-        val httpEntity = HttpEntity<String>(headers)
-        result = restTemplate.exchange("$quizUri/1", HttpMethod.GET, httpEntity, QuizDTO::class.java)
+        result = restTemplate
+            .withBasicAuth(testUsername, testPassword)
+            .exchange("$quizUri/1", HttpMethod.GET, defaultHeaders, QuizDTO::class.java)
         Assertions.assertThat(result).isNotNull()
         Assertions.assertThat(result!!.statusCode).isEqualTo(HttpStatus.UNAUTHORIZED)
         Assertions.assertThat(result.body).isNull()
@@ -71,14 +69,15 @@ class QuizMeUnauthorizedIntegrationTest {
     @Test
     fun `when POST add quiz no auth`() {
         val body = Json.encodeToJsonElement(addQuizDTO).toString()
-        var httpEntity = HttpEntity(body, defaultHeaders.headers)
+        val httpEntity = HttpEntity(body, defaultHeaders.headers)
         var result = restTemplate.exchange(quizUri, HttpMethod.POST, httpEntity, typeReference<TestUtils.JacksonPage<QuizDTO>>())
         Assertions.assertThat(result).isNotNull()
         Assertions.assertThat(result!!.statusCode).isEqualTo(HttpStatus.UNAUTHORIZED)
         Assertions.assertThat(result.body).isNull()
 
-        httpEntity = HttpEntity(body, testUtils.createAuthHeader(testUsername, testPassword))
-        result = restTemplate.exchange(quizUri, HttpMethod.POST, httpEntity, typeReference<TestUtils.JacksonPage<QuizDTO>>())
+        result = restTemplate
+            .withBasicAuth(testUsername, testPassword)
+            .exchange(quizUri, HttpMethod.POST, httpEntity, typeReference<TestUtils.JacksonPage<QuizDTO>>())
         Assertions.assertThat(result).isNotNull()
         Assertions.assertThat(result!!.statusCode).isEqualTo(HttpStatus.UNAUTHORIZED)
         Assertions.assertThat(result.body).isNull()
@@ -87,15 +86,14 @@ class QuizMeUnauthorizedIntegrationTest {
     @Test
     fun `when DELETE quiz no auth`() {
         val quizUri = "$quizUri/1"
-        val body = Json.encodeToJsonElement(addQuizDTO).toString()
-        var httpEntity = HttpEntity(body, defaultHeaders.headers)
-        var result = restTemplate.exchange(quizUri, HttpMethod.DELETE, httpEntity, typeReference<TestUtils.JacksonPage<QuizDTO>>())
+        var result = restTemplate.exchange(quizUri, HttpMethod.DELETE, defaultHeaders, typeReference<TestUtils.JacksonPage<QuizDTO>>())
         Assertions.assertThat(result).isNotNull()
         Assertions.assertThat(result!!.statusCode).isEqualTo(HttpStatus.UNAUTHORIZED)
         Assertions.assertThat(result.body).isNull()
 
-        httpEntity = HttpEntity(body, testUtils.createAuthHeader(testUsername, testPassword))
-        result = restTemplate.exchange(quizUri, HttpMethod.DELETE, httpEntity, typeReference<TestUtils.JacksonPage<QuizDTO>>())
+        result = restTemplate
+            .withBasicAuth(testUsername, testPassword)
+            .exchange(quizUri, HttpMethod.DELETE, defaultHeaders, typeReference<TestUtils.JacksonPage<QuizDTO>>())
         Assertions.assertThat(result).isNotNull()
         Assertions.assertThat(result!!.statusCode).isEqualTo(HttpStatus.UNAUTHORIZED)
         Assertions.assertThat(result.body).isNull()
@@ -105,14 +103,15 @@ class QuizMeUnauthorizedIntegrationTest {
     fun `when POST check quiz answer no auth`() {
         val quizUri = "$quizUri/1/solve"
         val body = Json.encodeToJsonElement(addQuizDTO).toString()
-        var httpEntity = HttpEntity(body, defaultHeaders.headers)
+        val httpEntity = HttpEntity(body, defaultHeaders.headers)
         var result = restTemplate.exchange(quizUri, HttpMethod.POST, httpEntity, typeReference<TestUtils.JacksonPage<QuizDTO>>())
         Assertions.assertThat(result).isNotNull()
         Assertions.assertThat(result!!.statusCode).isEqualTo(HttpStatus.UNAUTHORIZED)
         Assertions.assertThat(result.body).isNull()
 
-        httpEntity = HttpEntity(body, testUtils.createAuthHeader(testUsername, testPassword))
-        result = restTemplate.exchange(quizUri, HttpMethod.POST, httpEntity, typeReference<TestUtils.JacksonPage<QuizDTO>>())
+        result = restTemplate
+            .withBasicAuth(testUsername, testPassword)
+            .exchange(quizUri, HttpMethod.POST, httpEntity, typeReference<TestUtils.JacksonPage<QuizDTO>>())
         Assertions.assertThat(result).isNotNull()
         Assertions.assertThat(result!!.statusCode).isEqualTo(HttpStatus.UNAUTHORIZED)
         Assertions.assertThat(result.body).isNull()

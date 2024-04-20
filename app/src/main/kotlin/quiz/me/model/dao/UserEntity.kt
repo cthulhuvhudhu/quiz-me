@@ -12,7 +12,7 @@ data class UserEntity (
     @Column(unique = true, nullable = false)
     val email: String,
     @Column(nullable = false)
-    internal var password: String? = null,
+    internal val password: String,
     @ElementCollection(fetch = FetchType.EAGER)
     internal val authorities: List<String> = listOf("ROLE_USER"),
     @OneToMany(mappedBy = "user", fetch = FetchType.EAGER) // TODO :((((

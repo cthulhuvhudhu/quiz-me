@@ -45,7 +45,7 @@ class QuizController (
     @GetMapping("/{id}")
     fun getQuiz(
         @PathVariable id: Long
-    ): ResponseEntity<QuizDTO?> =
+    ): ResponseEntity<QuizDTO?> = // TODO remove ?
         quizService.getQuiz(id)?.let {
             return ResponseEntity
                 .ok()
@@ -71,7 +71,7 @@ class QuizController (
         @AuthenticationPrincipal user: UserDetails,
         @RequestBody @Valid quizDTO: CreateQuizDTO
     ): ResponseEntity<QuizDTO> =
-        quizService.addQuiz(quizDTO, UserEntity(email = user.username)).let {
+        quizService.addQuiz(quizDTO, user.username).let {
             return ResponseEntity
                 .ok()
                 .contentType(MediaType.APPLICATION_JSON)
@@ -99,6 +99,6 @@ class QuizController (
         } ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "Quiz not found for id = $id")
 
     companion object {
-        private const val DEFAULT_PAGE_SIZE = "10"
+        internal const val DEFAULT_PAGE_SIZE = "10"
     }
 }

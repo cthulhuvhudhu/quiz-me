@@ -175,6 +175,6 @@ class QuizServiceTest {
     @Test
     fun `test grade quiz does not exist`() {
         `when`(quizRepository.findById(-1)).thenReturn(Optional.empty())
-        assertNull(quizService.gradeQuiz(-1, listOf(), "a@a.com"))
+        assertThrows<QuizNotFoundException> { quizService.gradeQuiz(-1, listOf(), "a@a.com") }
     }
 }

@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.server.ResponseStatusException
+import quiz.me.QuizNotFoundException
 import quiz.me.service.UserQuizService
 
 @RestController
@@ -90,15 +91,15 @@ class QuizController (
         @AuthenticationPrincipal user: UserDetails,
         @PathVariable id: Long,
         @RequestBody guess: GuessDTO
-    ): ResponseEntity<FeedbackDTO?> =
-        quizService.gradeQuiz(id, guess.answer, user.username)?.let {
+    ): ResponseEntity<FeedbackDTO?> = // TODO nullable?
+        quizService.gradeQuiz(id, guess.answer, user.username).let {
             return ResponseEntity
                 .ok()
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(it)
-        } ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "Quiz not found for id = $id")
+        }
 
     companion object {
-        internal const val DEFAULT_PAGE_SIZE = "10"
+        const val DEFAULT_PAGE_SIZE = "10"
     }
 }

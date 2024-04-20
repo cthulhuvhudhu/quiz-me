@@ -16,10 +16,8 @@ import org.springframework.test.context.jdbc.Sql
 import org.springframework.transaction.annotation.Transactional
 import quiz.me.controller.QuizController
 import quiz.me.controller.RestResponseEntityExceptionHandler
-import quiz.me.model.dto.QuizDTO
-import quiz.me.model.dto.UserDTO
 import quiz.me.model.TestUtils.JacksonPage
-import quiz.me.model.dto.CreateQuizDTO
+import quiz.me.model.dto.*
 import quiz.me.model.typeReference
 
 @Sql(scripts = ["classpath:schema.sql"])
@@ -49,6 +47,7 @@ class QuizMeApplicationIntegrationTest {
 
     private final val testUserA = UserDTO("a@a.com", "12345")
     private final val testUserB = UserDTO("b@a.com", "12345")
+    private final val testUserDNE = UserDTO("dne@a.com", "password9999")
 
     @BeforeEach
     fun setUp() {
@@ -57,33 +56,39 @@ class QuizMeApplicationIntegrationTest {
     }
 
     @Test
+    fun `when GET quizzes no auth`() {
+        var result = restTemplate.exchange(quizUri, HttpMethod.GET, defaultHeaders, typeReference<JacksonPage<QuizDTO>>())
+        assertThat(result).isNotNull
+        assertThat(result!!.statusCode).isEqualTo(HttpStatus.UNAUTHORIZED)
+        assertThat(result.body).isNull()
+
+        result = restTemplate
+            .withBasicAuth(testUserDNE.email, testUserDNE.password)
+            .exchange(quizUri, HttpMethod.GET, defaultHeaders, typeReference<JacksonPage<QuizDTO>>())
+        assertThat(result).isNotNull
+        assertThat(result!!.statusCode).isEqualTo(HttpStatus.UNAUTHORIZED)
+        assertThat(result.body).isNull()
+    }
+
+    @Test
     fun `when GET quizzes RETURN empty`() {
         val result = restTemplate
             .withBasicAuth(testUserA.email, testUserA.password)
             .exchange(quizUri, HttpMethod.GET, defaultHeaders, typeReference<JacksonPage<QuizDTO>>())
-        assertThat(result).isNotNull()
+        assertThat(result).isNotNull
         assertThat(result!!.statusCode).isEqualTo(HttpStatus.OK)
         assertThat(result.body!!.content).isEmpty()
     }
 
     @Test
     fun `when GET quizzes RETURN 1 of 1 pages, not full`() {
-        val createDTOs = (1..8).map {
-            CreateQuizDTO(
-                "Title_$it",
-                "Text_$it",
-                listOf("1$it", "2$it", "3$it", "4$it"),
-                listOf(it % 4)
-            )
-        }
-        val viewDTOs = createDTOs.mapIndexed { idx, it ->
-            createQuiz(it, if (idx % 2 == 0) testUserA else testUserB)
-        }
+        val viewDTOs = (1..8).map { writeQuiz(it, if (it % 2 == 0) testUserA else testUserB) }
+            .map { it.second }
 
         val result = restTemplate
             .withBasicAuth(testUserA.email, testUserA.password)
             .exchange(quizUri, HttpMethod.GET, defaultHeaders, typeReference<JacksonPage<QuizDTO>>())
-        assertThat(result).isNotNull()
+        assertThat(result).isNotNull
         assertThat(result!!.statusCode).isEqualTo(HttpStatus.OK)
         assertThat(result.body).isNotNull
         val page = result.body as PageImpl<QuizDTO>
@@ -98,22 +103,14 @@ class QuizMeApplicationIntegrationTest {
 
     @Test
     fun `when GET quizzes RETURN 2 of 3 pages`() {
-        val createDTOs = (1..25).map {
-            CreateQuizDTO(
-                "Title_$it",
-                "Text_$it",
-                listOf("1$it", "2$it", "3$it", "4$it"),
-                listOf(it % 4)
-            )
-        }
-        val viewDTOs = createDTOs.mapIndexed { idx, it ->
-            createQuiz(it, if (idx % 2 == 0) testUserA else testUserB)
-        }
+        val viewDTOs = (1..25)
+            .map { writeQuiz(it, if (it % 2 == 0) testUserA else testUserB) }
+            .map { it.second }
 
         val result = restTemplate
             .withBasicAuth(testUserA.email, testUserA.password)
             .exchange("$quizUri?page=1", HttpMethod.GET, defaultHeaders, typeReference<JacksonPage<QuizDTO>>())
-        assertThat(result).isNotNull()
+        assertThat(result).isNotNull
         assertThat(result!!.statusCode).isEqualTo(HttpStatus.OK)
         assertThat(result.body).isNotNull
         val page = result.body as PageImpl<QuizDTO>
@@ -126,57 +123,58 @@ class QuizMeApplicationIntegrationTest {
     }
 
     @Test
+    fun `when GET quiz by id no auth`() {
+        var result = restTemplate.exchange("$quizUri/1", HttpMethod.GET, defaultHeaders, QuizDTO::class.java)
+        assertThat(result).isNotNull
+        assertThat(result!!.statusCode).isEqualTo(HttpStatus.UNAUTHORIZED)
+        assertThat(result.body).isNull()
+
+        result = restTemplate
+            .withBasicAuth(testUserDNE.email, testUserDNE.password)
+            .exchange("$quizUri/1", HttpMethod.GET, defaultHeaders, QuizDTO::class.java)
+        assertThat(result).isNotNull
+        assertThat(result!!.statusCode).isEqualTo(HttpStatus.UNAUTHORIZED)
+        assertThat(result.body).isNull()
+    }
+
+    @Test
     fun `when GET quiz does not exist RETURN not found`() {
         val result = restTemplate
             .withBasicAuth(testUserA.email, testUserA.password)
             .exchange("$quizUri/1", HttpMethod.GET, defaultHeaders, ProblemDetail::class.java)
-        assertThat(result).isNotNull()
+        assertThat(result).isNotNull
         assertThat(result!!.statusCode).isEqualTo(HttpStatus.NOT_FOUND)
         assertThat(result.body!!.detail).contains("Quiz not found for id = 1")
     }
 
     @Test
     fun `when GET quiz RETURN`() {
-        val createDTO = CreateQuizDTO(
-            "Title_1",
-            "Text_1",
-            listOf("1", "2", "3", "4"),
-            listOf(1)
-        )
-        val viewDTO = createQuiz(createDTO, testUserB)
-
+        val viewDTO = writeQuiz().second
         val result = restTemplate
             .withBasicAuth(testUserA.email, testUserA.password)
             .exchange("$quizUri/${viewDTO.id!!}", HttpMethod.GET, defaultHeaders, QuizDTO::class.java)
-        assertThat(result).isNotNull()
+        assertThat(result).isNotNull
         assertThat(result!!.statusCode).isEqualTo(HttpStatus.OK)
         assertThat(result.body).isNotNull
         assertThat(result.body).isEqualTo(viewDTO)
     }
 
     @Test
-    fun `when POST quiz RETURN`() {
-        val createDTO = CreateQuizDTO(
-            "Title_1",
-            "Text_1",
-            listOf("1", "2", "3", "4"),
-            listOf(1)
-        )
-
-        val quiz = Json.encodeToJsonElement(createDTO)
-        val httpEntity = HttpEntity(quiz, defaultHeaders.headers)
-
-        val result = restTemplate
-            .withBasicAuth(testUserB.email, testUserB.password)
-            .postForEntity(quizUri, httpEntity, QuizDTO::class.java)
+    fun `when POST add quiz no auth`() {
+        val addQuizDTO = CreateQuizDTO("title", "text", listOf("1", "2", "3", "4"), listOf(1))
+        val body = Json.encodeToJsonElement(addQuizDTO).toString()
+        val httpEntity = HttpEntity(body, defaultHeaders.headers)
+        var result = restTemplate.exchange(quizUri, HttpMethod.POST, httpEntity, typeReference<JacksonPage<QuizDTO>>())
         assertThat(result).isNotNull
-        assertThat(result!!.statusCode).isEqualTo(HttpStatus.OK)
-        assertThat(result.body).isNotNull()
-        val quizDTO = result.body!!
-        assertThat(quizDTO.title).isEqualTo(createDTO.title)
-        assertThat(quizDTO.text).isEqualTo(createDTO.text)
-        assertThat(quizDTO.options).isEqualTo(createDTO.options)
-        assertThat(quizDTO.id).isNotNull()
+        assertThat(result!!.statusCode).isEqualTo(HttpStatus.UNAUTHORIZED)
+        assertThat(result.body).isNull()
+
+        result = restTemplate
+            .withBasicAuth(testUserDNE.email, testUserDNE.password)
+            .exchange(quizUri, HttpMethod.POST, httpEntity, typeReference<JacksonPage<QuizDTO>>())
+        assertThat(result).isNotNull
+        assertThat(result!!.statusCode).isEqualTo(HttpStatus.UNAUTHORIZED)
+        assertThat(result.body).isNull()
     }
 
     @Test
@@ -200,9 +198,50 @@ class QuizMeApplicationIntegrationTest {
             .postForEntity(quizUri, httpEntity, ProblemDetail::class.java)
         assertThat(result).isNotNull
         assertThat(result!!.statusCode).isEqualTo(HttpStatus.BAD_REQUEST)
-        assertThat(result.body).isNotNull()
+        assertThat(result.body).isNotNull
         val errors = result.body!!.properties!!["errors"] as List<*>
         assertThat(errors).contains(*expectedErrors.toTypedArray())
+    }
+
+    @Test
+    fun `when POST quiz RETURN`() {
+        val createDTO = CreateQuizDTO(
+            "Title_1",
+            "Text_1",
+            listOf("1", "2", "3", "4"),
+            listOf(1)
+        )
+
+        val quiz = Json.encodeToJsonElement(createDTO)
+        val httpEntity = HttpEntity(quiz, defaultHeaders.headers)
+
+        val result = restTemplate
+            .withBasicAuth(testUserB.email, testUserB.password)
+            .postForEntity(quizUri, httpEntity, QuizDTO::class.java)
+        assertThat(result).isNotNull
+        assertThat(result!!.statusCode).isEqualTo(HttpStatus.OK)
+        assertThat(result.body).isNotNull
+        val quizDTO = result.body!!
+        assertThat(quizDTO.title).isEqualTo(createDTO.title)
+        assertThat(quizDTO.text).isEqualTo(createDTO.text)
+        assertThat(quizDTO.options).isEqualTo(createDTO.options)
+        assertThat(quizDTO.id).isNotNull
+    }
+
+    @Test
+    fun `when DELETE quiz no auth`() {
+        val quizUri = "$quizUri/1"
+        var result = restTemplate.exchange(quizUri, HttpMethod.DELETE, defaultHeaders, typeReference<JacksonPage<QuizDTO>>())
+        assertThat(result).isNotNull
+        assertThat(result!!.statusCode).isEqualTo(HttpStatus.UNAUTHORIZED)
+        assertThat(result.body).isNull()
+
+        result = restTemplate
+            .withBasicAuth(testUserDNE.email, testUserDNE.password)
+            .exchange(quizUri, HttpMethod.DELETE, defaultHeaders, typeReference<JacksonPage<QuizDTO>>())
+        assertThat(result).isNotNull
+        assertThat(result!!.statusCode).isEqualTo(HttpStatus.UNAUTHORIZED)
+        assertThat(result.body).isNull()
     }
 
     @Test
@@ -210,7 +249,7 @@ class QuizMeApplicationIntegrationTest {
         val result = restTemplate
             .withBasicAuth(testUserA.email, testUserA.password)
             .exchange("$quizUri/1", HttpMethod.DELETE, defaultHeaders, ProblemDetail::class.java)
-        assertThat(result).isNotNull()
+        assertThat(result).isNotNull
         assertThat(result!!.statusCode).isEqualTo(HttpStatus.NOT_FOUND)
         val errors = result.body!!.properties!!["errors"] as List<*>
         assertThat(errors).containsOnly("Unable to find quiz '1'")
@@ -218,18 +257,12 @@ class QuizMeApplicationIntegrationTest {
 
     @Test
     fun `when DELETE quiz unauthorized RETURN forbidden`() {
-        val createDTO = CreateQuizDTO(
-            "Title_1",
-            "Text_1",
-            listOf("1", "2", "3", "4"),
-            listOf(1)
-        )
-        val viewDTO = createQuiz(createDTO, testUserB)
+        val viewDTO = writeQuiz(1, testUserB).second
 
         val result = restTemplate
             .withBasicAuth(testUserA.email, testUserA.password)
             .exchange("$quizUri/${viewDTO.id!!}", HttpMethod.DELETE, defaultHeaders, ProblemDetail::class.java)
-        assertThat(result).isNotNull()
+        assertThat(result).isNotNull
         assertThat(result!!.statusCode).isEqualTo(HttpStatus.FORBIDDEN)
         val errors = result.body!!.properties!!["errors"] as List<*>
         assertThat(errors).containsOnly("You do not have permission to delete the quiz")
@@ -237,26 +270,106 @@ class QuizMeApplicationIntegrationTest {
 
     @Test
     fun `when DELETE quiz RETURN`() {
-        val createDTO = CreateQuizDTO(
-            "Title_1",
-            "Text_1",
-            listOf("1", "2", "3", "4"),
-            listOf(1)
-        )
-        val viewDTO = createQuiz(createDTO, testUserA)
+        val viewDTO = writeQuiz().second
 
         val result = restTemplate
             .withBasicAuth(testUserA.email, testUserA.password)
             .exchange("$quizUri/${viewDTO.id!!}", HttpMethod.DELETE, defaultHeaders, Object::class.java)
-        assertThat(result).isNotNull()
+        assertThat(result).isNotNull
         assertThat(result!!.statusCode).isEqualTo(HttpStatus.NO_CONTENT)
         assertThat(result.body).isNull()
     }
+
+    @Test
+    fun `when POST check quiz answer no auth`() {
+        val quizUri = "$quizUri/1/solve"
+        val addQuizDTO = CreateQuizDTO("title", "text", listOf("1", "2", "3", "4"), listOf(1))
+        val body = Json.encodeToJsonElement(addQuizDTO).toString()
+        val httpEntity = HttpEntity(body, defaultHeaders.headers)
+        var result = restTemplate.exchange(quizUri, HttpMethod.POST, httpEntity, typeReference<JacksonPage<QuizDTO>>())
+        assertThat(result).isNotNull
+        assertThat(result!!.statusCode).isEqualTo(HttpStatus.UNAUTHORIZED)
+        assertThat(result.body).isNull()
+
+        result = restTemplate
+            .withBasicAuth(testUserDNE.email, testUserDNE.password)
+            .exchange(quizUri, HttpMethod.POST, httpEntity, typeReference<JacksonPage<QuizDTO>>())
+        assertThat(result).isNotNull
+        assertThat(result!!.statusCode).isEqualTo(HttpStatus.UNAUTHORIZED)
+        assertThat(result.body).isNull()
+    }
+
+    @Test
+    fun `when POST solution quiz does not exist RETURN not found`() {
+        val guessDTO = GuessDTO(listOf(1))
+        val httpEntity = HttpEntity(Json.encodeToJsonElement(guessDTO), defaultHeaders.headers)
+        val result = restTemplate
+            .withBasicAuth(testUserA.email, testUserA.password)
+            .exchange("$quizUri/1/solve", HttpMethod.POST, httpEntity, ProblemDetail::class.java)
+        assertThat(result).isNotNull
+        assertThat(result!!.statusCode).isEqualTo(HttpStatus.NOT_FOUND)
+        val errors = result.body!!.properties!!["errors"] as List<*>
+        assertThat(errors).containsOnly("Unable to find quiz '1'")
+    }
+
+    @Test
+    fun `when POST incorrect solution RETURN failed`() {
+        val quizDTOs = writeQuiz()
+        val guessDTO = GuessDTO(listOf((0..3).first { it !in quizDTOs.first.answer}))
+        val httpEntity = HttpEntity(Json.encodeToJsonElement(guessDTO), defaultHeaders.headers)
+        val result = restTemplate
+            .withBasicAuth(testUserA.email, testUserA.password)
+            .exchange("$quizUri/${quizDTOs.second.id!!}/solve", HttpMethod.POST, httpEntity, FeedbackDTO::class.java)
+        assertThat(result).isNotNull
+        assertThat(result!!.statusCode).isEqualTo(HttpStatus.OK)
+        assertThat(result.body).isEqualTo(failed)
+    }
+
+    @Test
+    fun `when POST correct solution RETURN success`() {
+        val quizDTOs = writeQuiz()
+        val guessDTO = GuessDTO(quizDTOs.first.answer)
+        val httpEntity = HttpEntity(Json.encodeToJsonElement(guessDTO), defaultHeaders.headers)
+        val result = restTemplate
+            .withBasicAuth(testUserA.email, testUserA.password)
+            .exchange("$quizUri/${quizDTOs.second.id!!}/solve", HttpMethod.POST, httpEntity, FeedbackDTO::class.java)
+        assertThat(result).isNotNull
+        assertThat(result!!.statusCode).isEqualTo(HttpStatus.OK)
+        assertThat(result.body).isEqualTo(success)
+    }
+
+    @Test
+    fun `when POST invalid body solution RETURN bad request`() {
+        val quizDTOs = writeQuiz()
+        val result = restTemplate
+            .withBasicAuth(testUserA.email, testUserA.password)
+            .exchange("$quizUri/${quizDTOs.second.id!!}/solve", HttpMethod.POST, defaultHeaders, ProblemDetail::class.java)
+        assertThat(result).isNotNull
+        assertThat(result!!.statusCode).isEqualTo(HttpStatus.BAD_REQUEST)
+        val errors = result.body!!.properties!!["errors"] as List<*>
+        assertThat(errors.size).isEqualTo(1)
+        assertThat(errors[0].toString()).contains("Required request body")
+    }
+
+    // TODO
+    //completed
+    // ... consider E2E
+    // ... we have TODOs
 
     private fun registerUser(userDTO: UserDTO) {
         val user = Json.encodeToJsonElement(userDTO)
         val httpEntity = HttpEntity(user, defaultHeaders.headers)
         restTemplate.postForEntity(registrationUri, httpEntity, Nothing::class.java)
+    }
+
+    private fun writeQuiz(suffix: Int = 1, author: UserDTO = testUserA): Pair<CreateQuizDTO, QuizDTO> {
+        val createDTO = CreateQuizDTO(
+            "Title_$suffix",
+            "Text_$suffix",
+            listOf("1", "2", "3", "4"),
+            listOf(1)
+        )
+        return createDTO to createQuiz(createDTO, author)
     }
 
     private fun createQuiz(quizDTO: CreateQuizDTO, author: UserDTO): QuizDTO {

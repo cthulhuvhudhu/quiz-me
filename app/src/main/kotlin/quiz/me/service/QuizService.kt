@@ -33,7 +33,6 @@ class QuizService(
 
     fun addQuiz(createQuizDTO: CreateQuizDTO, username: String): QuizDTO {
         val user = userRepository.findUserByEmail(username)!!
-//            TODO ?: throw UsernameNotFoundException("User not found")
         return quizRepository.save(createQuizDTO.toEntity(user)).toDTO()
     }
 
@@ -44,10 +43,9 @@ class QuizService(
         quizRepository.deleteById(id)
     }
 
-    fun gradeQuiz(id: Long, answer: List<Int>, username: String): FeedbackDTO? =
+    fun gradeQuiz(id: Long, answer: List<Int>, username: String): FeedbackDTO =
         quizRepository.findByIdOrNull(id)?.run {
             val user = userRepository.findUserByEmail(username)!!
-//                TODO ?: throw UsernameNotFoundException("User not found")
             if (answer.size == this.answers.size && this.answers.toIntArray() contentEquals answer.toIntArray()) {
                 val time = LocalDateTime.now()
                 UserQuizEntity(
@@ -61,5 +59,5 @@ class QuizService(
             } else {
                 return failed
             }
-        }
+        } ?: throw QuizNotFoundException(id)
 }

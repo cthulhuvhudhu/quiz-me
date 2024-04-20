@@ -319,7 +319,8 @@ class QuizControllerTest {
     @WithUserDetails("a@a.com")
     fun `test POST check quiz answer does not exist`() {
         val guess = GuessDTO(listOf(2))
-        `when`(quizService.gradeQuiz(1, guess.answer, "a@a.com")).thenReturn(null)
+        `when`(quizService.gradeQuiz(1, guess.answer, "a@a.com"))
+            .thenThrow(QuizNotFoundException::class.java)
         mockMvc.post("$uri/1/solve") {
             contentType = mType
             accept = mType

@@ -20,7 +20,7 @@ data class QuizEntity (
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "author_user_id", referencedColumnName = "id")
     var author: UserEntity,
-    @OneToMany(mappedBy = "quiz", cascade = [CascadeType.ALL])
+    @OneToMany(mappedBy = "quiz", cascade = [CascadeType.ALL]) // TODO lazyinit problem
     val completedQuizzes: MutableList<UserQuizEntity> = mutableListOf()
 ) {
     override fun equals(other: Any?): Boolean {

@@ -77,7 +77,9 @@ class QuizServiceTest {
         QuizTestModels.quizzes.forEach {
             `when`(quizRepository.save(it.entityIn))
                 .thenReturn(it.entityOut)
-            val actual = quizService.addQuiz(it.createDto, it.entityOut.author)
+            `when`(userRepository.findUserByEmail(it.entityOut.author.email))
+                .thenReturn(it.entityOut.author)
+            val actual = quizService.addQuiz(it.createDto, it.entityOut.author.email)
             assertThat(actual).isEqualTo(it.dto)
         }
     }
@@ -173,6 +175,6 @@ class QuizServiceTest {
     @Test
     fun `test grade quiz does not exist`() {
         `when`(quizRepository.findById(-1)).thenReturn(Optional.empty())
-        assertNull(quizService.gradeQuiz(-1, listOf(), "a@a.com"))
+        assertThrows<QuizNotFoundException> { quizService.gradeQuiz(-1, listOf(), "a@a.com") }
     }
 }

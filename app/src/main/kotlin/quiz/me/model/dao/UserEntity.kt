@@ -12,15 +12,15 @@ data class UserEntity (
     @Column(unique = true, nullable = false)
     val email: String,
     @Column(nullable = false)
-    internal var password: String? = null,
-//    @ElementCollection(fetch = FetchType.EAGER)
-    internal val authority: String = "ROLE_USER",
-    @OneToMany(mappedBy = "user")
+    internal val password: String,
+    @ElementCollection(fetch = FetchType.EAGER)
+    internal val authorities: List<String> = listOf("ROLE_USER"),
+    @OneToMany(mappedBy = "user", fetch = FetchType.EAGER) // TODO :((((
     val completedQuizzes: List<UserQuizEntity> = emptyList()
 ) : UserDetails {
 
     override fun getAuthorities(): MutableCollection<SimpleGrantedAuthority> =
-        mutableListOf(SimpleGrantedAuthority(authority))
+        authorities.map { SimpleGrantedAuthority(it) }.toMutableList()
 
     override fun getPassword(): String = password!!
 
@@ -50,7 +50,7 @@ data class UserEntity (
         var result = id?.hashCode() ?: 0
         result = 31 * result + email.hashCode()
         result = 31 * result + password.hashCode()
-        result = 31 * result + (authority.hashCode())
+        result = 31 * result + (authorities?.hashCode() ?: 0)
         result = 31 * result + completedQuizzes.hashCode()
         return result
     }

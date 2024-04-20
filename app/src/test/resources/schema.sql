@@ -1,55 +1,62 @@
-DROP TABLE IF EXISTS PUBLIC.USER CASCADE;
-create table PUBLIC.USER
+DROP TABLE IF EXISTS "user" CASCADE;
+create table "user"
 (
-    ID        CHARACTER VARYING(255) not null
+    "id"       CHARACTER VARYING(255) not null
         primary key,
-    EMAIL     CHARACTER VARYING(255) not null
+    "email"    CHARACTER VARYING(255) not null
         constraint USER_EMAIL_UNIQUE
             unique,
-    PASSWORD  CHARACTER VARYING(255) not null,
-    AUTHORITY CHARACTER VARYING(255) default 'ROLE_USER'
+    "password" CHARACTER VARYING(255) not null
 );
 
-
-DROP TABLE IF EXISTS PUBLIC.QUIZ CASCADE;
-create table PUBLIC.QUIZ
+DROP TABLE IF EXISTS "user_authorities";
+create table "user_authorities"
 (
-    ID             BIGINT auto_increment
+    "user_id"     CHARACTER VARYING(255) not null,
+    "authorities" CHARACTER VARYING(255),
+    constraint USER_AUTHORITIES_FK
+        foreign key ("user_id") references "user"
+);
+
+DROP TABLE IF EXISTS "quiz" CASCADE;
+create table "quiz"
+(
+    "id"             BIGINT auto_increment
         primary key,
-    TEXT           CHARACTER VARYING(255) not null,
-    TITLE          CHARACTER VARYING(255) not null,
-    AUTHOR_USER_ID CHARACTER VARYING(255) not null,
+    "text"           CHARACTER VARYING(255),
+    "title"          CHARACTER VARYING(255),
+    "author_user_id" CHARACTER VARYING(255),
     constraint QUIZ_USER_FK
-        foreign key (AUTHOR_USER_ID) references PUBLIC.USER
+        foreign key ("author_user_id") references "user"
 );
 
-DROP TABLE IF EXISTS PUBLIC.USER_QUIZ;
-create table PUBLIC.USER_QUIZ
+DROP TABLE IF EXISTS "user_quiz";
+create table "user_quiz"
 (
-    QUIZ_ID      BIGINT                 not null,
-    USER_ID      CHARACTER VARYING(255) not null,
-    COMPLETED_AT TIMESTAMP DEFAULT NOW(),
-    primary key (QUIZ_ID, USER_ID, COMPLETED_AT),
+    "completed_at" TIMESTAMP              not null DEFAULT NOW(),
+    "quiz_id"      BIGINT                 not null,
+    "user_id"      CHARACTER VARYING(255) not null,
+    primary key ("completed_at", "quiz_id", "user_id"),
     constraint USER_QUIZ_USER_FK
-        foreign key (USER_ID) references PUBLIC.USER,
+        foreign key ("quiz_id") references "quiz",
     constraint USER_QUIZ_QUIZ_FK
-        foreign key (QUIZ_ID) references PUBLIC.QUIZ
+        foreign key ("user_id") references "user"
 );
 
-DROP TABLE IF EXISTS PUBLIC.QUIZ_ANSWER;
-create table PUBLIC.QUIZ_ANSWER
+DROP TABLE IF EXISTS "quiz_answers";
+create table "quiz_answers"
 (
-    QUIZ_ID    BIGINT  not null,
-    ANSWER    INTEGER not null,
+    "quiz_id" BIGINT not null,
+    "answer"  INTEGER,
     constraint QUIZ_ANSWER_QUIZ_FK
-        foreign key (QUIZ_ID) references PUBLIC.QUIZ
+        foreign key ("quiz_id") references "quiz"
 );
 
-DROP TABLE IF EXISTS PUBLIC.QUIZ_OPTION;
-create table PUBLIC.QUIZ_OPTION
+DROP TABLE IF EXISTS "quiz_options";
+create table "quiz_options"
 (
-    QUIZ_ID    BIGINT                 not null,
-    OPTION     CHARACTER VARYING(255) not null,
+    "quiz_id" BIGINT not null,
+    "option"  CHARACTER VARYING(255),
     constraint QUIZ_OPTION_QUIZ_FK
-        foreign key (QUIZ_ID) references PUBLIC.QUIZ
+        foreign key ("quiz_id") references "quiz"
 );

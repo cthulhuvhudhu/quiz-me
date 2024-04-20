@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.server.ResponseStatusException
+import quiz.me.QuizNotFoundException
 import quiz.me.service.UserQuizService
 
 @RestController
@@ -45,7 +46,7 @@ class QuizController (
     @GetMapping("/{id}")
     fun getQuiz(
         @PathVariable id: Long
-    ): ResponseEntity<QuizDTO?> =
+    ): ResponseEntity<QuizDTO> =
         quizService.getQuiz(id)?.let {
             return ResponseEntity
                 .ok()
@@ -53,7 +54,7 @@ class QuizController (
                 .body(it)
         } ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "Quiz not found for id = $id")
 
-    @GetMapping("/completed", params = ["page"])
+    @GetMapping("/completed")
     fun getCompletedQuizzes(
         @AuthenticationPrincipal user: UserDetails,
         @RequestParam("page", defaultValue = "0") page: Int,
@@ -71,7 +72,7 @@ class QuizController (
         @AuthenticationPrincipal user: UserDetails,
         @RequestBody @Valid quizDTO: CreateQuizDTO
     ): ResponseEntity<QuizDTO> =
-        quizService.addQuiz(quizDTO, UserEntity(email = user.username)).let {
+        quizService.addQuiz(quizDTO, user.username).let {
             return ResponseEntity
                 .ok()
                 .contentType(MediaType.APPLICATION_JSON)
@@ -90,15 +91,15 @@ class QuizController (
         @AuthenticationPrincipal user: UserDetails,
         @PathVariable id: Long,
         @RequestBody guess: GuessDTO
-    ): ResponseEntity<FeedbackDTO?> =
-        quizService.gradeQuiz(id, guess.answer, user.username)?.let {
+    ): ResponseEntity<FeedbackDTO> =
+        quizService.gradeQuiz(id, guess.answer, user.username).let {
             return ResponseEntity
                 .ok()
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(it)
-        } ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "Quiz not found for id = $id")
+        }
 
     companion object {
-        private const val DEFAULT_PAGE_SIZE = "10"
+        const val DEFAULT_PAGE_SIZE = "10"
     }
 }

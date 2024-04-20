@@ -7,7 +7,6 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import quiz.me.OwnershipPermissionDeniedException
 import quiz.me.QuizNotFoundException
-import quiz.me.model.dao.UserEntity
 import quiz.me.model.dao.UserQuizEntity
 import quiz.me.model.dao.UserQuizKey
 import quiz.me.model.dto.CreateQuizDTO
@@ -32,8 +31,10 @@ class QuizService(
 
     fun getQuiz(id: Long): QuizDTO? = quizRepository.findByIdOrNull(id)?.toDTO()
 
-    fun addQuiz(createQuizDTO: CreateQuizDTO, user: UserEntity) =
-        quizRepository.save(createQuizDTO.toEntity(user)).toDTO()
+    fun addQuiz(createQuizDTO: CreateQuizDTO, username: String): QuizDTO {
+        val user = userRepository.findUserByEmail(username)!!
+        return quizRepository.save(createQuizDTO.toEntity(user)).toDTO()
+    }
 
     @Transactional
     fun deleteQuiz(id: Long, deleterEmail: String) {
@@ -42,7 +43,7 @@ class QuizService(
         quizRepository.deleteById(id)
     }
 
-    fun gradeQuiz(id: Long, answer: List<Int>, username: String): FeedbackDTO? =
+    fun gradeQuiz(id: Long, answer: List<Int>, username: String): FeedbackDTO =
         quizRepository.findByIdOrNull(id)?.run {
             val user = userRepository.findUserByEmail(username)!!
             if (answer.size == this.answers.size && this.answers.toIntArray() contentEquals answer.toIntArray()) {
@@ -58,5 +59,5 @@ class QuizService(
             } else {
                 return failed
             }
-        }
+        } ?: throw QuizNotFoundException(id)
 }

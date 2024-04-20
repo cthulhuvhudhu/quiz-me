@@ -2,14 +2,17 @@ package quiz.me.repository
 
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertDoesNotThrow
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
+import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.test.context.jdbc.Sql
 import quiz.me.model.QuizTestModels
 import quiz.me.model.UserTestModels
 import java.time.LocalDateTime
+import java.util.*
 
 @SpringBootTest
 @Sql(scripts = ["classpath:schema.sql", "classpath:data.sql"])
@@ -19,17 +22,20 @@ class TestingRepositoriesApplicationTests {
     private lateinit var userRepository: UserRepository
     @Autowired
     private lateinit var userQuizRepository: UserQuizRepository
+    @Autowired
+    private lateinit var passwordEncoder: PasswordEncoder
 
     private val pr = PageRequest.of(0, 2, Sort.by("completedAt").descending())
 
     @Test
     fun `test find user by email`() {
-        val testUser = UserTestModels.users[0].entityOut
-        val (id, email, password, authority) = userRepository.findUserByEmail(testUser.email)!!
-        assertThat(id).isEqualTo(testUser.id)
+        val testUser = UserTestModels.users[0]
+        val (id, email, password, authorities) = userRepository.findUserByEmail(testUser.email)!!
+
+        assertDoesNotThrow { UUID.fromString(id) }
         assertThat(email).isEqualTo(testUser.email)
-        assertThat(password).isEqualTo(testUser.password)
-        assertThat(authority).isEqualTo(testUser.authority)
+        assertThat(passwordEncoder.matches(testUser.dto.password, password)).isTrue()
+        assertThat(authorities).containsOnlyOnceElementsOf(testUser.entityOut.authorities)
     }
     @Test
     fun `test find missing user by email`() {

@@ -48,7 +48,7 @@ class RegistrationControllerTest {
             content = Json.encodeToJsonElement(testUser.dto)
         }.andExpect {
             status { isOk() }
-            content { "" }
+            content { string("") }
         }
     }
 

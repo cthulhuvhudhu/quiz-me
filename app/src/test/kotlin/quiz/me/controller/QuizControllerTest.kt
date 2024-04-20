@@ -32,7 +32,6 @@ import quiz.me.SecurityConfig
 import quiz.me.SpringSecurityWebAuxTestConfig
 import quiz.me.model.QuizTestModels
 import quiz.me.model.UserTestModels
-import quiz.me.model.dao.UserEntity
 import quiz.me.model.dto.*
 import quiz.me.service.QuizService
 import quiz.me.service.UserQuizService
@@ -80,7 +79,7 @@ class QuizControllerTest {
             accept = mType
         }.andExpect {
             status { isOk() }
-            content { "" }
+            content { string("") }
         }
     }
 
@@ -209,7 +208,7 @@ class QuizControllerTest {
     fun `test POST add quiz valid`() {
         val testQuiz = QuizTestModels.quizzes.first()
         val testUser = UserTestModels.users.first()
-        `when`(quizService.addQuiz(testQuiz.createDto, UserEntity(email = testUser.email)))
+        `when`(quizService.addQuiz(testQuiz.createDto, testUser.email))
             .thenReturn(testQuiz.dto)
 
         mockMvc.post(uri) {
@@ -320,7 +319,8 @@ class QuizControllerTest {
     @WithUserDetails("a@a.com")
     fun `test POST check quiz answer does not exist`() {
         val guess = GuessDTO(listOf(2))
-        `when`(quizService.gradeQuiz(1, guess.answer, "a@a.com")).thenReturn(null)
+        `when`(quizService.gradeQuiz(1, guess.answer, "a@a.com"))
+            .thenThrow(QuizNotFoundException::class.java)
         mockMvc.post("$uri/1/solve") {
             contentType = mType
             accept = mType

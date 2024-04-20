@@ -135,6 +135,25 @@ class QuizMeApplicationIntegrationTest {
         assertThat(result.body!!.detail).contains("Quiz not found for id = 1")
     }
 
+    @Test
+    fun `when GET quiz RETURN`() {
+        val createDTO = CreateQuizDTO(
+            "Title_1",
+            "Text_1",
+            listOf("1", "2", "3", "4"),
+            listOf(1)
+        )
+        val viewDTO = createQuiz(createDTO, testUserB)
+
+        val result = restTemplate
+            .withBasicAuth(testUserA.email, testUserA.password)
+            .exchange("$quizUri/${viewDTO.id!!}", HttpMethod.GET, defaultHeaders, QuizDTO::class.java)
+        assertThat(result).isNotNull()
+        assertThat(result!!.statusCode).isEqualTo(HttpStatus.OK)
+        assertThat(result.body).isNotNull
+        assertThat(result.body).isEqualTo(viewDTO)
+    }
+
     private fun registerUser(userDTO: UserDTO) {
         val user = Json.encodeToJsonElement(userDTO)
         val httpEntity = HttpEntity(user, defaultHeaders.headers)

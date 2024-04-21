@@ -13,7 +13,7 @@ import quiz.me.repository.UserQuizRepository
 class UserQuizService(
     private val userQuizRepository: UserQuizRepository,
 ) {
-    fun findAllByUserEmail(email: String, pr: PageRequest): Page<ViewCompletedQuizDTO> =
+    fun findAllCompletedByUserEmail(email: String, pr: PageRequest): Page<ViewCompletedQuizDTO> =
         userQuizRepository.findAllByUser_Email(email, pr.withSort(Sort.by("completedAt").descending()))
             .map { ViewCompletedQuizDTO(it.quiz.id, it.completedAt) }
 }

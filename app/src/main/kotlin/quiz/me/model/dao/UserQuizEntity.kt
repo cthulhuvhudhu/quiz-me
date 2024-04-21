@@ -6,18 +6,16 @@ import java.time.LocalDateTime
 @Entity(name = "user_quiz")
 @Embeddable
 data class UserQuizEntity (
-    @EmbeddedId
-    // TODO composite key for all columns? Eval performance, if embedded is really needed
-    var id: UserQuizKey,
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    var id: Long? = null,
     @ManyToOne(fetch = FetchType.LAZY)
-    @MapsId("userId")
-    @JoinColumn(name = "user_id", nullable = false, insertable = false, updatable = false)
+    @JoinColumn(name = "user_id", nullable = false)
     val user: UserEntity,
     @ManyToOne(fetch = FetchType.LAZY)
-    @MapsId("quizId")
-    @JoinColumn(name = "quiz_id", nullable = false, insertable = false, updatable = false)
+    @JoinColumn(name = "quiz_id", nullable = false)
     val quiz: QuizEntity,
-    @Column(name = "completed_at", nullable = false, insertable = false, updatable = false)
+    @Column(name = "completed_at", nullable = false)
     val completedAt: LocalDateTime = LocalDateTime.now()
 ) {
     override fun equals(other: Any?): Boolean {

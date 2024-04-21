@@ -33,10 +33,11 @@ create table "quiz"
 DROP TABLE IF EXISTS "user_quiz";
 create table "user_quiz"
 (
-    "completed_at" TIMESTAMP              not null DEFAULT NOW(),
+    "id"             BIGINT auto_increment
+        primary key,
+    "completed_at" TIMESTAMP              DEFAULT NOW(),
     "quiz_id"      BIGINT                 not null,
     "user_id"      CHARACTER VARYING(255) not null,
-    primary key ("completed_at", "quiz_id", "user_id"),
     constraint USER_QUIZ_USER_FK
         foreign key ("quiz_id") references "quiz",
     constraint USER_QUIZ_QUIZ_FK

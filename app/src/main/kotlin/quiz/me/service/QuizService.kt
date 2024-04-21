@@ -8,7 +8,6 @@ import org.springframework.transaction.annotation.Transactional
 import quiz.me.OwnershipPermissionDeniedException
 import quiz.me.QuizNotFoundException
 import quiz.me.model.dao.UserQuizEntity
-import quiz.me.model.dao.UserQuizKey
 import quiz.me.model.dto.CreateQuizDTO
 import quiz.me.model.dto.FeedbackDTO
 import quiz.me.model.dto.QuizDTO
@@ -17,13 +16,14 @@ import quiz.me.model.dto.success
 import quiz.me.model.dto.toDTO
 import quiz.me.model.dto.toEntity
 import quiz.me.repository.QuizRepository
+import quiz.me.repository.UserQuizRepository
 import quiz.me.repository.UserRepository
-import java.time.LocalDateTime
 
 @Service
 class QuizService(
     private val quizRepository: QuizRepository,
-    private val userRepository: UserRepository
+    private val userRepository: UserRepository,
+    private val userQuizRepository: UserQuizRepository
 ) {
 
     fun getQuizzes(pr: PageRequest): Page<QuizDTO> =
@@ -47,14 +47,8 @@ class QuizService(
         quizRepository.findByIdOrNull(id)?.run {
             val user = userRepository.findUserByEmail(username)!!
             if (answer.size == this.answers.size && this.answers.toIntArray() contentEquals answer.toIntArray()) {
-                val time = LocalDateTime.now()
-                UserQuizEntity(
-                    UserQuizKey(user.id!!, this.id!!, time),
-                    quiz = this,
-                    user = user,
-                    completedAt = time
-                ).let { this.completedQuizzes.add(it) }
-                quizRepository.save(this)
+                val record = UserQuizEntity(user = user, quiz = this)
+                userQuizRepository.save(record)
                 return success
             } else {
                 return failed

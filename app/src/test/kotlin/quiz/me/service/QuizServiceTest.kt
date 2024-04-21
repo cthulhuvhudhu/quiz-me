@@ -16,13 +16,14 @@ import quiz.me.OwnershipPermissionDeniedException
 import quiz.me.QuizNotFoundException
 import quiz.me.model.QuizTestModels
 import quiz.me.model.UserTestModels
-import quiz.me.model.dao.QuizEntity
+import quiz.me.model.dao.UserQuizEntity
 import quiz.me.model.dto.failed
 import quiz.me.model.dto.success
 import quiz.me.repository.QuizRepository
+import quiz.me.repository.UserQuizRepository
 import quiz.me.repository.UserRepository
+import java.time.LocalDateTime
 import java.util.Optional
-import kotlin.test.assertNull
 
 @SpringBootTest
 class QuizServiceTest {
@@ -31,11 +32,13 @@ class QuizServiceTest {
     private lateinit var quizRepository: QuizRepository
     @MockBean
     private lateinit var userRepository: UserRepository
+    @MockBean
+    private lateinit var userQuizRepository: UserQuizRepository
     @Autowired
     private lateinit var quizService: QuizService
 
     @Captor
-    private lateinit var quizCaptor: ArgumentCaptor<QuizEntity>
+    private lateinit var userQuizCaptor: ArgumentCaptor<UserQuizEntity>
 
     private val pr = PageRequest.of(0, 2)
     private val testUserEmail = "a@a.com"
@@ -109,7 +112,7 @@ class QuizServiceTest {
         val possibleAnswers = QuizTestModels.quizzes.map { it.entityOut.answers }
         val testUser = UserTestModels.users.first().entityOut
         val testQuizSet = QuizTestModels.quizzes.first()
-        assertThat(testQuizSet.entityOut.completedQuizzes).isEmpty()
+//        assertThat(testQuizSet.entityOut.completedQuizzes).isEmpty()
         `when`(quizRepository.findById(testQuizSet.id))
             .thenReturn(Optional.of(testQuizSet.entityOut))
         `when`(userRepository.findUserByEmail(testUser.email)).thenReturn(testUser)
@@ -117,8 +120,10 @@ class QuizServiceTest {
             val actual = quizService.gradeQuiz(testQuizSet.id, guess, testUser.email)
             if (guess == testQuizSet.entityOut.answers) {
                 assertThat(actual).isEqualTo(success)
-                verify(quizRepository).save(quizCaptor.capture())
-                assertThat(quizCaptor.value.completedQuizzes.size).isEqualTo(1)
+                verify(userQuizRepository).save(userQuizCaptor.capture())
+                assertThat(userQuizCaptor.value.user).isEqualTo(testUser)
+                assertThat(userQuizCaptor.value.quiz).isEqualTo(testQuizSet.entityOut)
+                assertThat(userQuizCaptor.value.completedAt).isBefore(LocalDateTime.now())
             } else {
                 assertThat(actual).isEqualTo(failed)
             }
@@ -131,7 +136,6 @@ class QuizServiceTest {
         val possibleAnswers = QuizTestModels.quizzes.map { it.entityOut.answers }
         val testUser = UserTestModels.users[0].entityOut
         val testQuizSet = QuizTestModels.quizzes[1]
-        assertThat(testQuizSet.entityOut.completedQuizzes).isEmpty()
 
         `when`(quizRepository.findById(testQuizSet.id))
             .thenReturn(Optional.of(testQuizSet.entityOut))
@@ -140,8 +144,10 @@ class QuizServiceTest {
             val actual = quizService.gradeQuiz(testQuizSet.id, guess, testUser.email)
             if (guess == testQuizSet.entityOut.answers) {
                 assertThat(actual).isEqualTo(success)
-                verify(quizRepository).save(quizCaptor.capture())
-                assertThat(quizCaptor.value.completedQuizzes.size).isEqualTo(1)
+                verify(userQuizRepository).save(userQuizCaptor.capture())
+                assertThat(userQuizCaptor.value.user).isEqualTo(testUser)
+                assertThat(userQuizCaptor.value.quiz).isEqualTo(testQuizSet.entityOut)
+                assertThat(userQuizCaptor.value.completedAt).isBefore(LocalDateTime.now())
             } else {
                 assertThat(actual).isEqualTo(failed)
             }
@@ -154,7 +160,6 @@ class QuizServiceTest {
         val possibleAnswers = QuizTestModels.quizzes.map { it.entityOut.answers }
         val testUser = UserTestModels.users[0].entityOut
         val testQuizSet = QuizTestModels.quizzes[2]
-        assertThat(testQuizSet.entityOut.completedQuizzes).isEmpty()
 
         `when`(quizRepository.findById(testQuizSet.id))
             .thenReturn(Optional.of(testQuizSet.entityOut))
@@ -163,8 +168,10 @@ class QuizServiceTest {
             val actual = quizService.gradeQuiz(testQuizSet.id, guess, testUser.email)
             if (guess == testQuizSet.entityOut.answers) {
                 assertThat(actual).isEqualTo(success)
-                verify(quizRepository).save(quizCaptor.capture())
-                assertThat(quizCaptor.value.completedQuizzes.size).isEqualTo(1)
+                verify(userQuizRepository).save(userQuizCaptor.capture())
+                assertThat(userQuizCaptor.value.user).isEqualTo(testUser)
+                assertThat(userQuizCaptor.value.quiz).isEqualTo(testQuizSet.entityOut)
+                assertThat(userQuizCaptor.value.completedAt).isBefore(LocalDateTime.now())
             } else {
                 assertThat(actual).isEqualTo(failed)
             }

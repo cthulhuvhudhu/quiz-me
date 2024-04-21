@@ -29,7 +29,7 @@ class UserQuizServiceTest {
             val userQuizzes = QuizTestModels.userQuizzes.filter { it.user == user }
             val repoResponse = PageImpl(userQuizzes.map { it.userQuizEntity })
             `when`(userQuizRepository.findAllByUser_Email(user.email, pr)).thenReturn(repoResponse)
-            val actual = userQuizService.findAllByUserEmail(user.email, pr)
+            val actual = userQuizService.findAllCompletedByUserEmail(user.email, pr)
             assertThat(actual)
                 .containsOnly(*userQuizzes.map { it.userQuizDTO }.toTypedArray())
                 .withFailMessage("Check for user '%s' completed quizzes failed", user.email)
@@ -40,7 +40,7 @@ class UserQuizServiceTest {
     fun `test find all completed quizzes by user email does not exist`() {
         `when`(userQuizRepository.findAllByUser_Email(UserTestModels.dneUser.email, pr))
             .thenReturn(PageImpl(emptyList()))
-        val actual = userQuizService.findAllByUserEmail(UserTestModels.dneUser.email, pr)
+        val actual = userQuizService.findAllCompletedByUserEmail(UserTestModels.dneUser.email, pr)
         assertThat(actual).isEmpty()
     }
 }

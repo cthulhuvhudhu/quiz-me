@@ -1,6 +1,5 @@
 package quiz.me.controller
 
-import quiz.me.model.dao.UserEntity
 import quiz.me.model.dto.*
 import quiz.me.service.QuizService
 import jakarta.validation.Valid
@@ -20,7 +19,6 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
-import org.springframework.web.server.ResponseStatusException
 import quiz.me.QuizNotFoundException
 import quiz.me.service.UserQuizService
 
@@ -52,7 +50,7 @@ class QuizController (
                 .ok()
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(it)
-        } ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "Quiz not found for id = $id")
+        } ?: throw QuizNotFoundException(id)
 
     @GetMapping("/completed")
     fun getCompletedQuizzes(
@@ -60,7 +58,7 @@ class QuizController (
         @RequestParam("page", defaultValue = "0") page: Int,
         @RequestParam("size", defaultValue = DEFAULT_PAGE_SIZE) size: Int
     ): ResponseEntity<Page<ViewCompletedQuizDTO>> =
-        userQuizService.findAllByUserEmail(user.username, PageRequest.of(page, size)).let {
+        userQuizService.findAllCompletedByUserEmail(user.username, PageRequest.of(page, size)).let {
             ResponseEntity
                 .ok()
                 .contentType(MediaType.APPLICATION_JSON)

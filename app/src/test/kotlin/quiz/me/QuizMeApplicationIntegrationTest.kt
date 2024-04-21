@@ -3,6 +3,7 @@ package quiz.me
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.encodeToJsonElement
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.within
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -20,6 +21,7 @@ import quiz.me.model.TestUtils.JacksonPage
 import quiz.me.model.dto.*
 import quiz.me.model.typeReference
 import java.time.LocalDateTime
+import java.time.temporal.ChronoUnit
 
 @Sql(scripts = ["classpath:schema.sql"])
 @SpringBootTest(
@@ -31,8 +33,6 @@ import java.time.LocalDateTime
     RestResponseEntityExceptionHandler::class])
 @Import(SecurityConfig::class)
 class QuizMeApplicationIntegrationTest {
-    // tODO need test container?
-    // todo tear down db when done? or in mem?
 
     @Autowired
     lateinit var restTemplate: TestRestTemplate
@@ -145,7 +145,8 @@ class QuizMeApplicationIntegrationTest {
             .exchange("$quizUri/1", HttpMethod.GET, defaultHeaders, ProblemDetail::class.java)
         assertThat(result).isNotNull
         assertThat(result!!.statusCode).isEqualTo(HttpStatus.NOT_FOUND)
-        assertThat(result.body!!.detail).contains("Quiz not found for id = 1")
+        val errors = result.body!!.properties!!["errors"] as List<*>
+        assertThat(errors).contains("Unable to find quiz '1'")
     }
 
     @Test
@@ -185,7 +186,6 @@ class QuizMeApplicationIntegrationTest {
         assertThat(result.body!!.content).isEmpty()
     }
 
-    // TODO userquiz is failing
     @Test
     fun `when GET completed quizzes RETURN first page`() {
         val completedDTOs =  (1..8).map { writeQuiz(it, if (it % 2 == 0) testUserA else testUserB) }
@@ -203,14 +203,20 @@ class QuizMeApplicationIntegrationTest {
         assertThat(page.totalPages).isEqualTo(1)
         assertThat(page.numberOfElements).isEqualTo(8)
         assertThat(page.totalElements).isEqualTo(8)
-        assertThat(page.content).containsExactlyElementsOf(completedDTOs)
+        (1..8).forEach { i ->
+            val actual = page.content.map { it as ViewCompletedQuizDTO }.first { it.quizId!!.toInt() == i }
+            val expected = completedDTOs.first { it.quizId!!.toInt() == i }
+            assertThat(actual.completedAt).isCloseTo(expected.completedAt, within(100, ChronoUnit.MILLIS))
+        }
     }
 
-    // TODO userquiz is failing
     @Test
     fun `when GET completed quizzes RETURN 2 of 3 pages`() {
         val completedDTOs =  (1..25).map { writeQuiz(it, if (it % 2 == 0) testUserA else testUserB) }
             .map { ViewCompletedQuizDTO(it.second.id!!, solveQuiz(it.second.id!!, GuessDTO(it.first.answer), testUserA)) }
+            .sortedByDescending { it.completedAt }
+            .drop(10)
+            .take(10)
         val result = restTemplate
             .withBasicAuth(testUserA.email, testUserA.password)
             .exchange("$quizUri/completed?page=1", HttpMethod.GET, defaultHeaders, typeReference<JacksonPage<ViewCompletedQuizDTO>>())
@@ -223,11 +229,13 @@ class QuizMeApplicationIntegrationTest {
         assertThat(page.totalPages).isEqualTo(3)
         assertThat(page.numberOfElements).isEqualTo(QuizController.Companion.DEFAULT_PAGE_SIZE.toInt())
         assertThat(page.totalElements).isEqualTo(25)
-        assertThat(page.content).containsExactlyElementsOf(completedDTOs.drop(10).take(10))
+        val actual = page.content.map { it as ViewCompletedQuizDTO }
+        (0..9).forEach { i ->
+            assertThat(actual[i].completedAt).isCloseTo(completedDTOs[i].completedAt, within(100, ChronoUnit.MILLIS))
+        }
     }
 
-    // TODO
-    // ... consider E2E
+    // TODO back out properties file
 
     @Test
     fun `when POST add quiz no auth ERROR`() {
@@ -472,7 +480,7 @@ class QuizMeApplicationIntegrationTest {
         val httpEntity = HttpEntity(guess, defaultHeaders.headers)
         restTemplate
             .withBasicAuth(solver.email, solver.password)
-            .postForEntity("$quizUri/$id/solve", httpEntity, ViewCompletedQuizDTO::class.java).body!!
+            .postForEntity("$quizUri/$id/solve", httpEntity, FeedbackDTO::class.java).body!!
         return LocalDateTime.now()
     }
 

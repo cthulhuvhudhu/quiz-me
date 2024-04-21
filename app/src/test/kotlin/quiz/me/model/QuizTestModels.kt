@@ -3,7 +3,6 @@ package quiz.me.model
 import quiz.me.model.dao.QuizEntity
 import quiz.me.model.dao.UserEntity
 import quiz.me.model.dao.UserQuizEntity
-import quiz.me.model.dao.UserQuizKey
 import quiz.me.model.dto.CreateQuizDTO
 import quiz.me.model.dto.QuizDTO
 import quiz.me.model.dto.ViewCompletedQuizDTO
@@ -34,8 +33,7 @@ object QuizTestModels {
         val quiz: QuizEntity
     ) {
         private val completedAt = LocalDateTime.now()
-        private val key = UserQuizKey(user.id!!, quiz.id!!, completedAt)
-        val userQuizEntity = UserQuizEntity(id = key, user = user, quiz = quiz)
+        val userQuizEntity = UserQuizEntity(user = user, quiz = quiz)
         val userQuizDTO = ViewCompletedQuizDTO(quiz.id!!, completedAt)
     }
 

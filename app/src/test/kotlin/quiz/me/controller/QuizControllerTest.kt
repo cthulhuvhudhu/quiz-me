@@ -25,7 +25,6 @@ import org.springframework.test.web.servlet.setup.DefaultMockMvcBuilder
 import org.springframework.test.web.servlet.setup.MockMvcBuilders
 import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.context.WebApplicationContext
-import org.springframework.web.server.ResponseStatusException
 import quiz.me.OwnershipPermissionDeniedException
 import quiz.me.QuizNotFoundException
 import quiz.me.SecurityConfig
@@ -140,8 +139,8 @@ class QuizControllerTest {
         }.andExpect {
             status { isNotFound() }
         }.andReturn()
-        assertThat(response.resolvedException).isInstanceOf(ResponseStatusException::class.java)
-        assertThat(response.resolvedException?.message).contains("Quiz not found for id = -1")
+        assertThat(response.resolvedException).isInstanceOf(QuizNotFoundException::class.java)
+        assertThat(response.resolvedException?.message).contains("Unable to find quiz '-1'")
     }
 
     @Test
@@ -160,7 +159,7 @@ class QuizControllerTest {
         val testUserQuizzes = QuizTestModels.userQuizzes.filter { testUser.entityOut == it.user }
 
         val expectedContent = testUserQuizzes.map { it.userQuizDTO }
-        `when`(userQuizService.findAllByUserEmail(testUser.email, pr)).thenAnswer {PageImpl(expectedContent) }
+        `when`(userQuizService.findAllCompletedByUserEmail(testUser.email, pr)).thenAnswer {PageImpl(expectedContent) }
         mockMvc.get("$uri/completed?page=0&size=2") {
             accept = mType
         }.andExpect {
@@ -179,7 +178,7 @@ class QuizControllerTest {
     fun `test GET completed quizzes by user none`() {
         val pr = PageRequest.of(0, 2)
 
-        `when`(userQuizService.findAllByUserEmail(UserTestModels.users.first().email, pr))
+        `when`(userQuizService.findAllCompletedByUserEmail(UserTestModels.users.first().email, pr))
             .thenAnswer { PageImpl<ViewCompletedQuizDTO>(emptyList()) }
         mockMvc.get("$uri/completed?page=0&size=2") {
             accept = mType

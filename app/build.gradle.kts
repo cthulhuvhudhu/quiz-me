@@ -53,6 +53,7 @@ dependencies {
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.security:spring-security-test")
     testImplementation("org.assertj:assertj-core:3.25.1")
+    testImplementation("org.testcontainers:testcontainers:1.19.7")
 }
 
 application {

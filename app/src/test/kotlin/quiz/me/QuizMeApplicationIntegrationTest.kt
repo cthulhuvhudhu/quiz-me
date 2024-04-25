@@ -4,9 +4,13 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.encodeToJsonElement
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.within
+import org.junit.jupiter.api.AfterAll
+import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestInstance
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.web.client.TestRestTemplate
 import org.springframework.context.annotation.Import
@@ -15,6 +19,8 @@ import org.springframework.http.*
 import org.springframework.test.context.ContextConfiguration
 import org.springframework.test.context.jdbc.Sql
 import org.springframework.transaction.annotation.Transactional
+import org.testcontainers.containers.PostgreSQLContainer
+import org.testcontainers.junit.jupiter.Testcontainers
 import quiz.me.controller.QuizController
 import quiz.me.controller.RestResponseEntityExceptionHandler
 import quiz.me.model.TestUtils.JacksonPage
@@ -32,10 +38,18 @@ import java.time.temporal.ChronoUnit
 @ContextConfiguration(classes = [SecurityConfig::class, ApplicationConfig::class,
     RestResponseEntityExceptionHandler::class])
 @Import(SecurityConfig::class)
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@Testcontainers
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 class QuizMeApplicationIntegrationTest {
 
     @Autowired
     lateinit var restTemplate: TestRestTemplate
+
+    private val database = PostgreSQLContainer("postgres:latest")
+        .withDatabaseName("integration-tests-db")
+        .withUsername("test")
+        .withPassword("test")
 
     private final val uri = "/api"
     private final val quizUri = "$uri/quizzes"
@@ -50,8 +64,18 @@ class QuizMeApplicationIntegrationTest {
     private final val testUserB = UserDTO("b@a.com", "12345")
     private final val testUserDNE = UserDTO("dne@a.com", "password9999")
 
+    @BeforeAll
+    fun setup() {
+        database.start()
+    }
+
+    @AfterAll
+    fun teardown() {
+        database.stop()
+    }
+
     @BeforeEach
-    fun setUp() {
+    fun setupEach() {
         registerUser(testUserA)
         registerUser(testUserB)
     }

@@ -1,14 +1,16 @@
 package quiz.me.repository
 
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertDoesNotThrow
+import org.junit.jupiter.api.*
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.test.context.jdbc.Sql
+import org.testcontainers.containers.PostgreSQLContainer
+import org.testcontainers.junit.jupiter.Testcontainers
 import quiz.me.model.QuizTestModels
 import quiz.me.model.UserTestModels
 import java.time.LocalDateTime
@@ -16,6 +18,9 @@ import java.util.*
 
 @SpringBootTest
 @Sql(scripts = ["classpath:schema.sql", "classpath:data.sql"])
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@Testcontainers
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 class TestingRepositoriesApplicationTests {
 
     @Autowired
@@ -26,6 +31,21 @@ class TestingRepositoriesApplicationTests {
     private lateinit var passwordEncoder: PasswordEncoder
 
     private val pr = PageRequest.of(0, 2, Sort.by("completedAt").descending())
+
+    private val database = PostgreSQLContainer("postgres:latest")
+        .withDatabaseName("integration-tests-db")
+        .withUsername("test")
+        .withPassword("test")
+
+    @BeforeAll
+    fun setup() {
+        database.start()
+    }
+
+    @AfterAll
+    fun teardown() {
+        database.stop()
+    }
 
     @Test
     fun `test find user by email`() {
